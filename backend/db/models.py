@@ -1,4 +1,6 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, Float, Boolean
+from sqlalchemy import (
+  Column, ForeignKey, Integer, String, Float, Boolean, DateTime
+)
 from sqlalchemy.orm import relationship
 from .database import Base
 
@@ -22,5 +24,23 @@ class BoundingBox(Base):
   top_left_lon = Column(Float)
   bottom_right_lat = Column(Float)
   bottom_right_lon = Column(Float)
-  owner_id = Column(Integer, ForeignKey("users.id"))
   owner = relationship("User", back_populates="bboxes")
+  owner_id = Column(Integer, ForeignKey("users.id"))
+
+
+class DataType(Base):
+  __tablename__ = "data_types"
+  id = Column(Integer, primary_key=True, index=True)
+  name = Column(String, unique=True, index=True)
+  description = Column(String, nullable=True)
+  base_url = Column(String, nullable=False)
+
+
+class CacheBoundingBoxUpdate(Base):
+
+  __tablename__ = "cache_bbox_updates"
+
+  id = Column(Integer, primary_key=True, index=True)
+  most_recent_data = Column(DateTime, nullable=True)
+  bbox_id = Column(Integer, ForeignKey("bboxes.id"))
+  data_type_id = Column(Integer, ForeignKey("data_types.id"))

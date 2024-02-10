@@ -1,9 +1,10 @@
 from datetime import timedelta, datetime, timezone
-from hmac import compare_digest
 import os
 from typing import Annotated
 
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import (
+  FastAPI, Depends, HTTPException, status, Request
+)
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -23,9 +24,13 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 models.Base.metadata.create_all(bind=database.engine)
 app = FastAPI()
+
+
+# OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-# Dependency
+
+# DB Dependency
 def get_db():
   db = database.SessionLocal()
   try:
@@ -81,18 +86,18 @@ def create_access_token(data: dict, expires_delta: timedelta):
   return encoded_jwt
 
 
-# todo: rate limit by ip on all routes
-app = FastAPI()
+@app.get("/")
+async def root():
+  return "There's nothing here yet, check out /docs for the API documentation!"
 
-
-@app.get("/users/me", response_model=schemas.User)
+@app.get("/users/me", response_model=schemas.User, tags=["auth"])
 async def read_user_info(
     current_user: schemas.User = Depends(get_user)):
   """ Get the currently authenticated user's info"""
   return current_user
 
 
-@app.post("/users", response_model=schemas.User)
+@app.post("/users", response_model=schemas.User, tags=["auth"])
 async def create_user(
     user: schemas.UserFromForm,
     db: Session = Depends(get_db)):
@@ -119,7 +124,8 @@ async def create_user(
   )
   return crud.create_user(db, user_create)
 
-@app.post("/token")
+
+@app.post("/token", tags=["auth"])
 async def login_for_access_token(
    form_data: OAuth2PasswordRequestForm = Depends(),
    db: Session = Depends(get_db)):
@@ -139,18 +145,16 @@ async def login_for_access_token(
   return schemas.Token(access_token=access_token, token_type="bearer")
 
 
-# todo: implement bbox validation
 def is_valid_bbox(
     top_left_lat: float,
     top_left_lon: float,
     bottom_right_lat: float,
     bottom_right_lon: float):
   """ Check if the bounding box is valid. """
-  #return top_left_lat < bottom_right_lat and top_left_lon < bottom_right_lon
-  return True
+  return top_left_lat > bottom_right_lat and top_left_lon < bottom_right_lon
 
 
-@app.get("/api/bboxes")
+@app.get("/api/bboxes", tags=["notifications"])
 async def get_bboxes(
    user: schemas.User = Depends(get_user),
    db: Session = Depends(get_db)):
@@ -161,7 +165,7 @@ async def get_bboxes(
   return crud.get_user_bboxes(db, user.id)
 
 
-@app.post("/api/bboxes")
+@app.post("/api/bboxes", tags=["notifications"])
 async def add_bbox(
   bbox: schemas.BoundingBox,
   user: Annotated[schemas.User, Depends(get_user)],
@@ -179,4 +183,4 @@ async def add_bbox(
     )
   db_user = crud.get_user_by_email(db, user.email)
   crud.create_user_bbox(db, bbox, db_user.id)
-  return {"message": "bounding box added!"}
+  return {"message": "New bounding box added!"}
