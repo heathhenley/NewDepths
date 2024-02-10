@@ -45,3 +45,11 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
   username: str | None = None
+
+class DataTypes(BaseModel):
+  name: str
+  description: str | None = None
+  base_url: str
+
+  class Config:
+    from_attributes = True

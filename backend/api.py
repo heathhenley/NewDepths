@@ -1,3 +1,12 @@
+""" NOAA CSB/MBES Notification API
+
+An api to subscribe to notifications for new data within a user
+defined bounding box. At the moment, only supports MBES data from NOAA,
+but will soon be expanded to CSB data.
+
+A worker runs through the database of bounding boxes, checks for new data,
+and emails the user about the new data if there is any.
+"""
 from datetime import timedelta, datetime, timezone
 import os
 from typing import Annotated
@@ -23,7 +32,11 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 models.Base.metadata.create_all(bind=database.engine)
-app = FastAPI()
+app = FastAPI(
+  docs_url="/",
+  redoc_url=None,
+  title="NOAA CSB/MBES Notification API",
+  description=__doc__)
 
 
 # OAuth2 scheme
@@ -86,10 +99,6 @@ def create_access_token(data: dict, expires_delta: timedelta):
   return encoded_jwt
 
 
-@app.get("/")
-async def root():
-  return "There's nothing here yet, check out /docs for the API documentation!"
-
 @app.get("/users/me", response_model=schemas.User, tags=["auth"])
 async def read_user_info(
     current_user: schemas.User = Depends(get_user)):
@@ -145,6 +154,7 @@ async def login_for_access_token(
   return schemas.Token(access_token=access_token, token_type="bearer")
 
 
+# TODO: add bbox area limit?
 def is_valid_bbox(
     top_left_lat: float,
     top_left_lon: float,
@@ -153,6 +163,17 @@ def is_valid_bbox(
   """ Check if the bounding box is valid. """
   return top_left_lat > bottom_right_lat and top_left_lon < bottom_right_lon
 
+
+@app.get(
+    "/api/datatypes",
+    tags=["notifications"],
+    response_model=list[schemas.DataTypes])
+def get_datatypes(db: Session = Depends(get_db)):
+  """ List the available data types for notifications.
+
+  They correspond to different data sources at NOAA.
+  """
+  return crud.get_data_types(db)
 
 @app.get("/api/bboxes", tags=["notifications"])
 async def get_bboxes(
