@@ -1,14 +1,19 @@
-import logging
 from collections import defaultdict
 from datetime import datetime
+import logging
+import os
 import requests
 
+import resend
 from sqlalchemy.orm import Session
+from dotenv import load_dotenv
 
 from db.database import SessionLocal
 from db import crud
 from db import models
 
+load_dotenv()
+resend.api_key = os.getenv("RESEND_KEY")
 
 # This one isn't working at the moment started returning 500s, so getting setup
 # using the multibeam service instead
@@ -58,6 +63,32 @@ def get_data_for_bbox(
     print(f"Error getting data for bbox {bbox.id}: {e}")
     return None
   return res.json()
+
+
+def make_email_body(notifications):
+  """ Make the email body for the user. """
+  body = "<h1> New data found for your bounding boxes! </h1>"
+  for notification in notifications:
+    bbox = notification["bbox_id"]
+    data_type = notification["data_type"]
+    new_surveys = notification["new_surveys"]
+    body += f"<h2> New '{data_type.name}' data for bbox #{bbox.id} </h2>"
+    body += (
+      f"<h3>BBOX: ({bbox.top_left_lat:.2f}, {bbox.top_left_lon:.2f}), "
+      f"({bbox.bottom_right_lat:.2f}, {bbox.bottom_right_lon:.2f})</h3>"
+    )
+    body += f"<p>There are {len(new_surveys)} new surveys for this box.</p>"
+    body += "<ul>"
+    for survey in new_surveys[:5]:
+      sid = survey["attributes"]["SURVEY_ID"]
+      pf = survey["attributes"]["PLATFORM"]
+      dl = survey["attributes"]["DOWNLOAD_URL"]
+      body += f"<li>ID: {sid}, platform: {pf}, <a href={dl}>Link</a></li>"
+    body += "</ul>"
+    if len(new_surveys) > 5:
+      body += f"<p>And {len(new_surveys) - 5} more...</p>"
+  return body
+
 
 def check_for_new_data(
     db: Session,
@@ -119,6 +150,7 @@ def check_for_new_data(
 
 
 def main():
+  logging.basicConfig(level=logging.DEBUG)
 
   db = next(get_db())
 
@@ -147,10 +179,26 @@ def main():
   # notification / email to each user
   notifications_by_user = check_for_new_data(db, bboxes, data_types)
 
-  logging.debug("Notifications by user:")
-  logging.debug(notifications_by_user)
+  # send the notifications
+  for user_id, notifications in notifications_by_user.items():
 
-  # TODO send notifications to the users
+    user = crud.get_user_by_id(db, user_id)
+
+    if not user or not user.email:
+      logging.error(f"User {user_id} not found or has no email.")
+      continue
+
+    logging.info(f"Sending notifications to {user.email}.")
+
+    email_body = make_email_body(notifications)
+    r = resend.Emails.send({
+      "from": "onboarding@resend.dev",
+      "to": user.email,
+      "subject": "There is new NOAA data available!",
+      "html": email_body
+    })
+    logging.info(f"Email sent to {user.id} with status: {r.status_code}")
+
 
 
 
