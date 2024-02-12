@@ -158,9 +158,6 @@ def main():
     logging.error("No connection to the database or no users found. Exiting.")
     return 1
 
-  # drop and recreate the cache table for testing
-  models.CacheBoundingBoxUpdate.__table__.drop(db.bind)
-  models.CacheBoundingBoxUpdate.__table__.create(db.bind)
   # add type for testing
   if not db.query(models.DataType).count():
     db.add(models.DataType(
@@ -198,9 +195,6 @@ def main():
       "html": email_body
     })
     logging.info(f"Email sent to {user.id} with status: {r.status_code}")
-
-
-
 
 
 if __name__ == "__main__":
