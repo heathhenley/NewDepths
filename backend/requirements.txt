@@ -23,6 +23,7 @@ pydantic==2.6.1
 pydantic_core==2.16.2
 python-dotenv==1.0.1
 python-jose==3.3.0
+python-multipart==0.0.9
 requests==2.31.0
 resend==0.7.2
 rsa==4.9
