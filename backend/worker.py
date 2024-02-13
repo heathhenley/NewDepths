@@ -15,10 +15,6 @@ from db import models
 load_dotenv()
 resend.api_key = os.getenv("RESEND_KEY")
 
-# This one isn't working at the moment started returning 500s, so getting setup
-# using the multibeam service instead
-NOAA_MULTIBEAM_URL = r"https://gis.ngdc.noaa.gov/arcgis/rest/services/web_mercator/multibeam_dynamic/MapServer/0/query"
-
 
 def bbox_to_envelope(bbox: models.BoundingBox) -> str:
   """ Convert a bbox to a string in the correct esri format for 'envelope'."""
@@ -157,16 +153,6 @@ def main():
   if not db or not db.query(models.User).count():
     logging.error("No connection to the database or no users found. Exiting.")
     return 1
-
-  # add type for testing
-  if not db.query(models.DataType).count():
-    db.add(models.DataType(
-      name="multibeam",
-      base_url=NOAA_MULTIBEAM_URL,
-      description="NOAA Multibeam Data"
-    ))
-    db.commit()
-
 
   data_types = crud.get_data_types(db)
   bboxes = crud.get_all_bboxes(db)
