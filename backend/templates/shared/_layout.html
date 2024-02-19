@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{% block title %} Test title {% endblock %}</title>
+    <link
+      rel="stylesheet"
+      href="/static/font-awesome-4.7.0/css/font-awesome.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Roboto:400,400italic,600,600italic,700,700italic|Source+Code+Pro:500"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="https://unpkg.com/@bopen/leaflet-area-selection@0.6.1/dist/index.css" />
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="https://unpkg.com/@bopen/leaflet-area-selection@0.6.1/dist/index.umd.js"></script>
+    <link rel="stylesheet" href="/static/style.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+
+  <body hx-ext="loading-states" class="w-100 h-100 flex flex-col">
+    <header class="md:pl-12 p-2 border-b-2">
+      <h1 class="text-3xl">PingMe.csb</h1>
+      <p class="">
+        Get notifications when new MBES or CSB data becomes available
+      </p>
+      {% if current_user %}
+      <a href="/logout" class="underline">Logout</a>
+      {% else %}
+      <a href="/login" class="underline">Login</a>
+      {% endif %}
+    </header>
+
+
+    <main class="h-full w-full flex flex-col items-center p-2">{% block main_content %}{% endblock %}</main>
+
+    <footer class="flex justify-center p-2 text-xs">
+      <div>
+        Made with <i class="fa fa-heart"></i>,
+        <a class="underline" href="https://fastapi.tiangolo.com/" target="_blank">FastAPI</a> and
+        <a class="underline" href="https://htmx.org" target="_blank">HTMX.</a> Running on
+        <a class="underline" href="https://railway.app/" target="_blank">Railway</a> -
+        <a class="underline" href="https://github.com/heathhenley/github-value"
+          ><i class="fa fa-brands fa-github"></i>
+        </a>
+      </div>
+    </footer>
+    <script src="/static/htmx.min.js"></script>
+    <script src="https://unpkg.com/htmx.org/dist/ext/loading-states.js"></script>
+    {% block additional_js %}{% endblock %}
+  </body>
+</html>

@@ -1,0 +1,34 @@
+<div id="form">
+  <h2 class="text-2xl">Set new notification area</h2>
+  <p class="text-sm">
+    Get notified when new MBES or CSB data becomes available with in
+    the bounding box defined above 
+  </p>
+  <p>
+    Enter bounding box coordinates by dragging on the map, or by entering
+    them manually:
+  </p>
+  <form
+   hx-post="/bbox_form"
+   hx-swap="outerHTML"
+   hx-target="#form"
+   class="flex flex-col">
+    <label for="tl_lat">Top left latitude</label>
+    <input class="border" name="top_left_lat" id="tl_lat" value="" />
+    <label for="tl_lon">Top left longitude</label>
+    <input class="border" name="top_left_lon" id="tl_lon" value="" />
+    <label for="br_lat">Bottom right latitude</label>
+    <input class="border" name="bottom_right_lat" id="br_lat" value="" />
+    <label for="br_lon">Bottom right longitude</label>
+    <input class="border" name="bottom_right_lon" id="br_lon" value="" />
+    <button
+      id="submit_bbox"
+      type="submit"
+      class="bg-blue-500 text-white p-2 rounded-md disabled:bg-gray-300"
+      disabled
+    >
+      Submit
+    </button>
+  </form>
+  <div id="mbes" class="mt-4"></div>
+</div>
