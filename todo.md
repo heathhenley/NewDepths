@@ -1,18 +1,21 @@
 Backend
 - hook up csb endpoint
+  - the return attributes are a little different, still need to filter on time
+  - hopefully it also allows SRID 4326 for the bbox?
 - get full backend set up and working (probably railway)
   - worker as a cron
+- abstract things for emails, webhooks, and hitting the different endpoints
+  so it's less hacked in / coupled + easier to change and extend
+- probably need email verification to avoid spam
+- check cookies are set up to prevent XSS for the barebones frontend 
+  implementation (there's info in htmx docs)
+  - do I need an explicit csrf token?
+- add simple rate limiting
 - add webhook instead of email as an option for notifications
 
 Frontend
-- auth with backend
-  - require auth to add bbox, need email for notification
-- load map
-- add new bbox button (click and drag or click start/stop)
-- submit bbox to db
-- show users bboxes on map
-- show users bboxes in list
-- user can delete their own bboxes
-- user can edit their own bboxes
+- show users existing bboxes on map ? 
+- show users existing bboxes in list ? 
+- user can delete their own bboxes ?
 - user can edit email
 - user can delete account
