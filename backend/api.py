@@ -225,6 +225,15 @@ async def index(request: Request, db: Session = Depends(get_db)):
     "index.html", {"request": request, "current_user": current_user})
 
 
+@app.get("/bbox_form")
+async def bbox_form(request: Request):
+  if request.headers.get("hx-request"):
+    return templates.TemplateResponse(
+      "partials/save_bbox.html", {"request": request})
+  return templates.TemplateResponse(
+    "index.html", {"request": request, "bbox_form": "true"})
+
+
 @app.post("/bbox_form")
 async def bbox_form(
     request: Request,
@@ -248,7 +257,9 @@ async def bbox_form(
   if not is_valid_bbox(
       bbox.top_left_lat, bbox.top_left_lon,
       bbox.bottom_right_lat, bbox.bottom_right_lon):
-    return "Invalid bounding box"
+    return templates.TemplateResponse(
+      "partials/save_bbox.html",
+      {"request": request, "error": "Invalid bounding box"})
   db_user = crud.get_user_by_email(db, user.email)
   crud.create_user_bbox(db, bbox, db_user.id)
   return templates.TemplateResponse(
@@ -270,17 +281,20 @@ async def login(
     username: Annotated[str, Form()],
     password: Annotated[str, Form()],
     db: Session = Depends(get_db)):
+
   user = authenticate_user(db, username, password)
+
   if not user:
     return templates.TemplateResponse(
-      "partial/not_logged_in.html", {"request": request})
+      "index.html", {"request": request, "login": "true"})
+
   access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
   access_token = create_access_token(
     data={"sub": user.username},
     expires_delta=access_token_expires
   )
   response = templates.TemplateResponse(
-    "partials/save_bbox.html", {"request": request})
+      "index.html", {"request": request, "current_user": user})
   response.set_cookie(
     key="token",
     value=access_token,

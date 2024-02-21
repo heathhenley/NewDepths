@@ -15,11 +15,11 @@ if (toggleButton) {
     if (map.dragging.enabled()) {
       map.dragging.disable();
       map.scrollWheelZoom.disable();
-      toggleButton.innerHTML = "Go to Zoom/Pan Mode";
+      toggleButton.innerHTML = "Toggle Zoom/Pan Mode ON";
     } else {
       map.dragging.enable();
       map.scrollWheelZoom.enable();
-      toggleButton.innerHTML = "Go to Select Mode";
+      toggleButton.innerHTML = "Toggle Select Mode ON";
     }
   });
 }
