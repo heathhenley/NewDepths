@@ -13,7 +13,8 @@ from typing import Annotated
 
 from dotenv import load_dotenv
 from fastapi import (
-  FastAPI, Depends, HTTPException, status, Request
+  FastAPI, Form, Depends, HTTPException, status,
+  templating, staticfiles, Request
 )
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -27,7 +28,7 @@ from schemas import schemas
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 
 if not all([SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES]):
   raise ValueError("Missing environment variable(s)!")
@@ -36,11 +37,13 @@ if not all([SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES]):
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 models.Base.metadata.create_all(bind=database.engine)
 app = FastAPI(
-  docs_url="/",
+  docs_url="/docs",
   redoc_url=None,
   title="NOAA CSB/MBES Notification API",
   description=__doc__)
 
+app.mount("/static", staticfiles.StaticFiles(directory="static"), name="static")
+templates = templating.Jinja2Templates(directory="templates")
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -208,3 +211,112 @@ async def add_bbox(
   db_user = crud.get_user_by_email(db, user.email)
   crud.create_user_bbox(db, bbox, db_user.id)
   return {"message": "New bounding box added!"}
+
+
+@app.get("/")
+async def index(request: Request, db: Session = Depends(get_db)):
+  current_user = None
+  try:
+    token = request.cookies.get("token")
+    current_user = get_user(token, db)
+  except (HTTPException, KeyError, AttributeError):
+    pass
+  return templates.TemplateResponse(
+    "index.html", {"request": request, "current_user": current_user})
+
+
+@app.get("/bbox_form")
+async def bbox_form(request: Request):
+  if request.headers.get("hx-request"):
+    return templates.TemplateResponse(
+      "partials/save_bbox.html", {"request": request})
+  return templates.TemplateResponse(
+    "index.html", {"request": request, "bbox_form": "true"})
+
+
+@app.post("/bbox_form")
+async def bbox_form(
+    request: Request,
+    top_left_lat: Annotated[float, Form()],
+    top_left_lon: Annotated[float, Form()],
+    bottom_right_lat: Annotated[float, Form()],
+    bottom_right_lon: Annotated[float, Form()],
+    db: Session = Depends(get_db)):
+  try:
+    token = request.cookies.get("token")
+    user = get_user(token, db)
+  except (HTTPException, KeyError):
+    return templates.TemplateResponse("partials/not_logged_in.html", {"request": request})
+  
+  bbox = schemas.BoundingBox(
+    top_left_lat=top_left_lat,
+    top_left_lon=top_left_lon,
+    bottom_right_lat=bottom_right_lat,
+    bottom_right_lon=bottom_right_lon
+  )
+  if not is_valid_bbox(
+      bbox.top_left_lat, bbox.top_left_lon,
+      bbox.bottom_right_lat, bbox.bottom_right_lon):
+    return templates.TemplateResponse(
+      "partials/save_bbox.html",
+      {"request": request, "error": "Invalid bounding box"})
+  db_user = crud.get_user_by_email(db, user.email)
+  crud.create_user_bbox(db, bbox, db_user.id)
+  return templates.TemplateResponse(
+    "partials/done.html", {"request": request})
+
+
+@app.get("/login")
+async def login(request: Request):
+  if request.headers.get("hx-request"):
+    return templates.TemplateResponse(
+      "partials/login.html", {"request": request})
+  return templates.TemplateResponse(
+    "index.html", {"request": request, "login": "true"})
+
+
+@app.post("/login")
+async def login(
+    request: Request,
+    username: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    db: Session = Depends(get_db)):
+
+  user = authenticate_user(db, username, password)
+
+  if not user:
+    return templates.TemplateResponse(
+      "index.html", {"request": request, "login": "true"})
+
+  access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+  access_token = create_access_token(
+    data={"sub": user.username},
+    expires_delta=access_token_expires
+  )
+  response = templates.TemplateResponse(
+      "index.html", {"request": request, "current_user": user})
+  response.set_cookie(
+    key="token",
+    value=access_token,
+    httponly=True,
+    max_age=60*int(ACCESS_TOKEN_EXPIRE_MINUTES)
+  )
+  return response
+
+
+@app.get("/logout")
+async def logout(request: Request):
+  response = templates.TemplateResponse(
+    "index.html", {"request": request})
+  response.delete_cookie(key="token")
+  return response
+
+
+@app.get("/register")
+async def register(request: Request):
+  if request.headers.get("hx-request"):
+    return templates.TemplateResponse(
+      "partials/register.html", {"request": request})
+  return templates.TemplateResponse(
+    "index.html", {"request": request, "register": "true"})
+
