@@ -13,6 +13,7 @@ Backend
   - do I need an explicit csrf token?
 - add simple rate limiting
 - add webhook instead of email as an option for notifications
+- style everything better, make it look nice
 
 Frontend
 - show users existing bboxes on map ? 
