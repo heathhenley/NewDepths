@@ -4,6 +4,7 @@ Backend
   - hopefully it also allows SRID 4326 for the bbox?
 - get full backend set up and working (probably railway)
   - worker as a cron
+- make sure jinja is set up to autoescape html (I think it isn't the default)
 - abstract things for emails, webhooks, and hitting the different endpoints
   so it's less hacked in / coupled + easier to change and extend
 - probably need email verification to avoid spam
