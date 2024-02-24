@@ -24,20 +24,52 @@ def bbox_to_envelope(bbox: models.BoundingBox) -> str:
   ymax = max(bbox.top_left_lat, bbox.bottom_right_lat)
   return f"{xmin},{ymin},{xmax},{ymax}"
 
+def fmt_time(dt: datetime) -> str:
+  return f"timestamp {dt.strftime('%Y-%m-%d %H:%M:%S')}"
+
 # TODO add since parameter, will reduce the amount of data we need to process
 # eg it will only get possble new data
-def multibeam_query_params(bbox: models.BoundingBox) -> dict:
+def multibeam_query_params(
+    bbox: models.BoundingBox, since: datetime | None) -> dict:
+  not_null = f'ENTERED_DATE IS NOT NULL'
   return {
     'f': 'json',
-    'where': '',
+    'where': not_null,
     'geometry': bbox_to_envelope(bbox),
     'geometryType': 'esriGeometryEnvelope',
     'inSR': 4326,
     'spatialRel': 'esriSpatialRelIntersects',
-    'outFields': 'SURVEY_ID,PLATFORM,DOWNLOAD_URL,START_TIME,END_TIME',
+    'outFields': 'SURVEY_ID,PLATFORM,DOWNLOAD_URL,START_TIME,END_TIME,ENTERED_DATE',
     'returnGeometry': False,
-    'orderByFields': 'START_TIME'
+    'orderByFields': 'ENTERED_DATE'
   }
+
+
+def csb_query_params(
+    bbox: models.BoundingBox, since: datetime | None) -> dict:
+  not_null = f'ARRIVAL_DATE IS NOT NULL'
+  return {
+    'f': 'json',
+    'where': not_null, 
+    'geometry': bbox_to_envelope(bbox),
+    'geometryType': 'esriGeometryEnvelope',
+    'inSR': 4326,
+    'spatialRel': 'esriSpatialRelIntersects',
+    'outFields': 'NAME,PLATFORM,ARRIVAL_DATE,START_DATE,YEAR',
+    'returnGeometry': False,
+    'orderByFields': 'ARRIVAL_DATE'
+  }
+
+
+def get_query_params(
+    data_type: models.DataType,
+    bbox: models.BoundingBox,
+    since: datetime | None) -> dict:
+  if data_type.name == "multibeam":
+    return multibeam_query_params(bbox, since)
+  elif data_type.name.find("csb") != -1:
+    return csb_query_params(bbox, since)
+  raise ValueError(f"Unknown data type: {data_type.name}")
 
 
 def get_db():
@@ -104,36 +136,41 @@ def check_for_new_data(
             f"for data type {data_type.name}, "
             f"last data from: {date}")
 
-      # TODO generalize, use since date to reduce the amount of data
-      query_params = multibeam_query_params(bbox)
+      query_params = get_query_params(data_type, bbox, date)
 
       url = data_type.base_url
       if not (new_data := get_data_for_bbox(url, query_params, bbox)):
         print(f"No new data for bbox {bbox.id}")
         continue
 
+      if "error" in new_data:
+        print(
+          f"Error in {data_type.name} "
+          f"bb:{bbox.id}: {new_data['error']}")
+        continue
+      
       if not (surveys := new_data['features']):
         print(f"No new data for bbox {bbox.id}")
         continue
 
+      time_key = "ENTERED_DATE" if data_type.name == "multibeam" else "ARRIVAL_DATE"
       # get the latest date from the new data, this will be cached 
-      latest_date = surveys[-1]["attributes"]["START_TIME"] # it's sorted
+      latest_date = surveys[-1]["attributes"][time_key] # it's sorted
       latest_datetime = datetime.fromtimestamp(latest_date / 1000.0)
       print(f"Latest date for bbox {bbox.id}: {latest_datetime}")
 
       if date is not None:
         surveys = [
           s for s in surveys
-          if s["attributes"]["START_TIME"] / 1000.0 > date.timestamp()
+          if s["attributes"][time_key] / 1000.0 > date.timestamp()
         ]
 
       print(f"BBOX: {bbox.id} has {len(surveys)} "
             f"new {data_type.name} surveys since {date}.")
-      
+
       # upsert in the database
       crud.set_last_cached_date(db, bbox, data_type, latest_datetime)
 
-      # add to the notifications list for later
       if surveys:
         notifications_by_user[bbox.owner_id].append(
           {
