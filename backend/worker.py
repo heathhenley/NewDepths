@@ -108,10 +108,13 @@ def make_email_body(notifications):
     body += f"<p>There are {len(new_surveys)} new surveys for this box.</p>"
     body += "<ul>"
     for survey in new_surveys[:5]:
-      sid = survey["attributes"]["SURVEY_ID"]
+      sid = survey["attributes"].get(
+        "SURVEY_ID", survey["attributes"].get("NAME", "Unknown"))
       pf = survey["attributes"]["PLATFORM"]
-      dl = survey["attributes"]["DOWNLOAD_URL"]
-      body += f"<li>ID: {sid}, platform: {pf}, <a href={dl}>Link</a></li>"
+      dl = survey["attributes"].get("DOWNLOAD_URL", "")
+      body += f"<li>ID: {sid}, platform: {pf}"
+      if df:
+        body += f", <a href={dl}>Link</a></li>"
     body += "</ul>"
     if len(new_surveys) > 5:
       body += f"<p>And {len(new_surveys) - 5} more...</p>"
