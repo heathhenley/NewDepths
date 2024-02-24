@@ -92,7 +92,7 @@ def get_data_for_bbox(
     return None
   return res.json()
 
-
+# Make this a template?
 def make_email_body(notifications):
   """ Make the email body for the user. """
   body = "<h1> New data found for your bounding boxes! </h1>"
@@ -215,7 +215,7 @@ def main():
 
     email_body = make_email_body(notifications)
     r = resend.Emails.send({
-      "from": "onboarding@resend.dev",
+      "from": "data@updates.newdepths.xyz",
       "to": user.email,
       "subject": "There is new NOAA data available!",
       "html": email_body
