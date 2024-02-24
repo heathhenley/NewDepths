@@ -106,14 +106,14 @@ def create_access_token(data: dict, expires_delta: timedelta):
 
 
 @app.get("/users/me", response_model=schemas.User, tags=["auth"])
-async def read_user_info(
+def read_user_info(
     current_user: schemas.User = Depends(get_user)):
   """ Get the currently authenticated user's info"""
   return current_user
 
 
 @app.post("/users", response_model=schemas.User, tags=["auth"])
-async def create_user(
+def create_user(
     user: schemas.UserFromForm,
     db: Session = Depends(get_db)):
   """ Create a new user.
@@ -141,7 +141,7 @@ async def create_user(
 
 
 @app.post("/token", tags=["auth"])
-async def login_for_access_token(
+def login_for_access_token(
    form_data: OAuth2PasswordRequestForm = Depends(),
    db: Session = Depends(get_db)):
   # try to get the user from the database
@@ -182,7 +182,7 @@ def get_datatypes(db: Session = Depends(get_db)):
   return crud.get_data_types(db)
 
 @app.get("/api/bboxes", tags=["notifications"])
-async def get_bboxes(
+def get_bboxes(
    user: schemas.User = Depends(get_user),
    db: Session = Depends(get_db)):
   """ Get all the bounding boxes for this user.
@@ -193,7 +193,7 @@ async def get_bboxes(
 
 
 @app.post("/api/bboxes", tags=["notifications"])
-async def add_bbox(
+def add_bbox(
   bbox: schemas.BoundingBox,
   user: Annotated[schemas.User, Depends(get_user)],
   db: Session = Depends(get_db)):
@@ -214,7 +214,7 @@ async def add_bbox(
 
 
 @app.get("/")
-async def index(request: Request, db: Session = Depends(get_db)):
+def index(request: Request, db: Session = Depends(get_db)):
   current_user = None
   try:
     token = request.cookies.get("token")
@@ -226,7 +226,7 @@ async def index(request: Request, db: Session = Depends(get_db)):
 
 
 @app.get("/bbox_form")
-async def bbox_form(request: Request):
+def bbox_form(request: Request):
   if request.headers.get("hx-request"):
     return templates.TemplateResponse(
       "partials/save_bbox.html", {"request": request})
@@ -235,7 +235,7 @@ async def bbox_form(request: Request):
 
 
 @app.post("/bbox_form")
-async def bbox_form(
+def bbox_form(
     request: Request,
     top_left_lat: Annotated[float, Form()],
     top_left_lon: Annotated[float, Form()],
@@ -267,7 +267,7 @@ async def bbox_form(
 
 
 @app.get("/login")
-async def login(request: Request):
+def login(request: Request):
   if request.headers.get("hx-request"):
     return templates.TemplateResponse(
       "partials/login.html", {"request": request})
@@ -276,7 +276,7 @@ async def login(request: Request):
 
 
 @app.post("/login")
-async def login(
+def login(
     request: Request,
     username: Annotated[str, Form()],
     password: Annotated[str, Form()],
@@ -293,6 +293,7 @@ async def login(
     data={"sub": user.username},
     expires_delta=access_token_expires
   )
+
   response = templates.TemplateResponse(
       "index.html", {"request": request, "current_user": user})
   response.set_cookie(
@@ -305,7 +306,7 @@ async def login(
 
 
 @app.get("/logout")
-async def logout(request: Request):
+def logout(request: Request):
   response = templates.TemplateResponse(
     "index.html", {"request": request})
   response.delete_cookie(key="token")
@@ -313,7 +314,7 @@ async def logout(request: Request):
 
 
 @app.get("/register")
-async def register(request: Request):
+def register(request: Request):
   if request.headers.get("hx-request"):
     return templates.TemplateResponse(
       "partials/register.html", {"request": request})
