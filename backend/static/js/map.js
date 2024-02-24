@@ -34,28 +34,29 @@ const currentBbox = {
 const boxes = new Array();
 
 // handle mouse events to draw a bounding box
-map.on("mousedown", function (latlon) {
+map.on("mousedown", function (e) {
   if (map.dragging.enabled()) {
     return;
   }
-  currentBbox.start_lat = latlon.latlng.lat;
-  currentBbox.start_lon = latlon.latlng.lng;
+  currentBbox.start_lat = e.latlng.lat;
+  currentBbox.start_lon = e.latlng.lng;
 });
 
-map.on("mouseup", function (latlon) {
+map.on("mouseup", function (e) {
   if (map.dragging.enabled()) {
     return;
   }
 
-  currentBbox.end_lat = latlon.latlng.lat;
-  currentBbox.end_lon = latlon.latlng.lng;
+  currentBbox.end_lat = e.latlng.lat;
+  currentBbox.end_lon = e.latlng.lng;
+
 
   // get leftmost lon and topmost lat
-  const top_left_lat = Math.max(currentBbox.start_lon, currentBbox.end_lon);
-  const top_left_lon = Math.min(currentBbox.start_lat, currentBbox.end_lat);
+  const top_left_lon = Math.min(currentBbox.start_lon, currentBbox.end_lon);
+  const top_left_lat = Math.max(currentBbox.start_lat, currentBbox.end_lat);
   // get rightmost lon and bottommost lat
-  const bottom_right_lat = Math.min(currentBbox.start_lon, currentBbox.end_lon);
-  const bottom_right_lon = Math.max(currentBbox.start_lat, currentBbox.end_lat);
+  const bottom_right_lon = Math.max(currentBbox.start_lon, currentBbox.end_lon);
+  const bottom_right_lat = Math.min(currentBbox.start_lat, currentBbox.end_lat);
 
   document.getElementById("tl_lat").value = top_left_lat;
   document.getElementById("tl_lon").value = top_left_lon;
