@@ -12,6 +12,8 @@ def get_db():
 
 def main():
   NOAA_MULTIBEAM_URL = r"https://gis.ngdc.noaa.gov/arcgis/rest/services/web_mercator/multibeam_dynamic/MapServer/0/query"
+  NOAA_CSB_POINTS_URL = r"https://gis.ngdc.noaa.gov/arcgis/rest/services/csb/MapServer/0/query"
+  NOAA_CSB_LINES_URL = r"https://gis.ngdc.noaa.gov/arcgis/rest/services/csb/MapServer/1/query"
 
   db = next(get_db())
 
@@ -20,11 +22,30 @@ def main():
 
   # add types to the db
   res = db.query(models.DataType).filter_by(name="multibeam").first()
-  if res:
-    return 0
-  db.add(models.DataType(name="multibeam", base_url=NOAA_MULTIBEAM_URL,
-    description="NOAA Multibeam Data"
-  ))
+  if not res:
+    db.add(models.DataType(name="multibeam", base_url=NOAA_MULTIBEAM_URL,
+      description="NOAA Multibeam Data"
+    ))
+  db.commit()
+
+  res = db.query(models.DataType).filter_by(name="csb0").first()
+  if not res:
+    db.add(
+      models.DataType(
+        name="csb0",
+        base_url=NOAA_CSB_POINTS_URL,
+        description="NOAA CSB Data (points)"
+    ))
+  db.commit()
+  
+  res = db.query(models.DataType).filter_by(name="csb1").first()
+  if not res:
+    db.add(
+      models.DataType(
+        name="csb1",
+        base_url=NOAA_CSB_LINES_URL,
+        description="NOAA CSB Data (lines)"
+    ))
   db.commit()
 
 
