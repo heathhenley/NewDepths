@@ -113,7 +113,7 @@ def make_email_body(notifications):
       pf = survey["attributes"]["PLATFORM"]
       dl = survey["attributes"].get("DOWNLOAD_URL", "")
       body += f"<li>ID: {sid}, platform: {pf}"
-      if df:
+      if dl:
         body += f", <a href={dl}>Link</a></li>"
     body += "</ul>"
     if len(new_surveys) > 5:
@@ -220,7 +220,7 @@ def main():
       "subject": "There is new NOAA data available!",
       "html": email_body
     })
-    logging.info(f"Email sent to {user.id} with status: {r.status_code}")
+    logging.info(f"Email sent to {user.id} with status: {r}")
 
 
 if __name__ == "__main__":
