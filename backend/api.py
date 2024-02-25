@@ -1,8 +1,7 @@
 """ NOAA CSB/MBES Notification API
 
 An api to subscribe to notifications for new data within a user
-defined bounding box. At the moment, only supports MBES data from NOAA,
-but will soon be expanded to CSB data.
+defined bounding box. At the moment, supports MBES  and CSB data from NOAA.
 
 A worker runs through the database of bounding boxes, checks for new data,
 and emails the user about the new data if there is any.
