@@ -1,4 +1,7 @@
 Backend
+- maybe add some limits?
+  - how many bboxes can a user have?
+  - how much area can a bbox cover?
 - make sure jinja is set up to autoescape html (I think it isn't the default)
 - probably need email verification to avoid spam
 - add webhook instead of email as an option for notifications
