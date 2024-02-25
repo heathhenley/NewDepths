@@ -1,82 +1,18 @@
 from collections import defaultdict
-from dataclasses import dataclass
-from datetime import datetime
 import logging
 import os
-import requests
-import urllib.parse
 
 import resend
 from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 
 from db.database import SessionLocal
-from db import crud
-from db import models
+from db import crud, models
+from fetchers.data_fetchers import data_fetcher_factory
+
 
 load_dotenv()
 resend.api_key = os.getenv("RESEND_KEY")
-
-
-def build_url(base_url: str, query_params: dict) -> str:
-  """ Build a url from a base url and a dictionary of query parameters. """
-  return f"{base_url}?{urllib.parse.urlencode(query_params)}"
-
-
-def bbox_to_envelope(bbox: models.BoundingBox) -> str:
-  """ Convert a bbox to a string in the correct esri format for 'envelope'."""
-  xmin = min(bbox.top_left_lon, bbox.bottom_right_lon)
-  xmax = max(bbox.top_left_lon, bbox.bottom_right_lon)
-  ymin = min(bbox.top_left_lat, bbox.bottom_right_lat)
-  ymax = max(bbox.top_left_lat, bbox.bottom_right_lat)
-  return f"{xmin},{ymin},{xmax},{ymax}"
-
-def fmt_time(dt: datetime) -> str:
-  return f"timestamp {dt.strftime('%Y-%m-%d %H:%M:%S')}"
-
-# TODO add since parameter, will reduce the amount of data we need to process
-# eg it will only get possble new data
-def multibeam_query_params(
-    bbox: models.BoundingBox, since: datetime | None) -> dict:
-  not_null = f'ENTERED_DATE IS NOT NULL'
-  return {
-    'f': 'json',
-    'where': not_null,
-    'geometry': bbox_to_envelope(bbox),
-    'geometryType': 'esriGeometryEnvelope',
-    'inSR': 4326,
-    'spatialRel': 'esriSpatialRelIntersects',
-    'outFields': 'SURVEY_ID,PLATFORM,DOWNLOAD_URL,START_TIME,END_TIME,ENTERED_DATE',
-    'returnGeometry': False,
-    'orderByFields': 'ENTERED_DATE DESC'
-  }
-
-
-def csb_query_params(
-    bbox: models.BoundingBox, since: datetime | None) -> dict:
-  not_null = f'ARRIVAL_DATE IS NOT NULL'
-  return {
-    'f': 'json',
-    'where': not_null, 
-    'geometry': bbox_to_envelope(bbox),
-    'geometryType': 'esriGeometryEnvelope',
-    'inSR': 4326,
-    'spatialRel': 'esriSpatialRelIntersects',
-    'outFields': 'NAME,PLATFORM,ARRIVAL_DATE,START_DATE,YEAR',
-    'returnGeometry': False,
-    'orderByFields': 'ARRIVAL_DATE DESC'
-  }
-
-
-def get_query_params(
-    data_type: models.DataType,
-    bbox: models.BoundingBox,
-    since: datetime | None) -> dict:
-  if data_type.name == "multibeam":
-    return multibeam_query_params(bbox, since)
-  elif data_type.name.find("csb") != -1:
-    return csb_query_params(bbox, since)
-  raise ValueError(f"Unknown data type: {data_type.name}")
 
 
 def get_db():
@@ -87,33 +23,16 @@ def get_db():
     db.close()
 
 
-def get_data_for_bbox(
-    url: str, query_params: dict, bbox: models.BoundingBox) -> str | None:
-  """ Make the actual request to the NOAA API. """
-  try:
-    res = requests.get(url, params=query_params, timeout=5)
-    if res.status_code != 200:
-      raise Exception(f"Bad response from NOAA: {res.status_code}")
-  except Exception as e:
-    logging.error(f"Error getting data for bbox {bbox.id}: {e}")
-    return None
-  return res.json()
-
-
-# Make this a template?
+# TODO Make this a template jinja2 template
 def make_email_body(notifications):
   """ Make the email body for the user. """
-  type_map = {
-    "multibeam": "Multibeam",
-    "csb0": "CSB Line Data",
-    "csb1": "CSB Point Data",
-  }
   body = "<h1> New data found for your bounding boxes! </h1>"
   for notification in notifications:
-    bbox = notification["bbox_id"]
-    data_type = type_map[notification["data_type"].name]
-
+    bbox = notification["bbox"]
+    data_type = notification["data_type"]
+    json_url = notification["url"]
     new_surveys = notification["new_surveys"]
+
     body += f"<h2> New '{data_type}' data for bbox</h2>"
     body += (
       f"<h3>BBOX: ({bbox.top_left_lat:.2f}, {bbox.top_left_lon:.2f}), "
@@ -122,18 +41,15 @@ def make_email_body(notifications):
     body += f"<p>There are {len(new_surveys)} new surveys for this box.</p>"
     body += "<ul>"
     for survey in new_surveys[:5]:
-      t = survey["attributes"].get(
-        "ENTERED_DATE", survey["attributes"].get("ARRIVAL_DATE"))
-      body += f"<li>{datetime.fromtimestamp(t / 1000.0)}"
-      pf = survey["attributes"]["PLATFORM"]
-      dl = survey["attributes"].get("DOWNLOAD_URL", "")
-      body += f", Platform: {pf}"
+      body += f"<li>{survey.time}"
+      body += f", Platform: {survey.platform}"
+      dl = survey.download_url
       if dl:
         body += f", <a href={dl}>Link</a></li>"
     body += "</ul>"
     if len(new_surveys) > 5:
       body += f"<p>And {len(new_surveys) - 5} more...</p>"
-    body += f'<a href={notification["url"]}> JSON </a>'
+    body += f'<a href={json_url}> API CALL (full JSON) </a>'
   return body
 
 
@@ -144,43 +60,31 @@ def check_for_new_data(
   """ Check for new data for each bounding box and data type. """
 
   notifications_by_user = defaultdict(list)
-  for bbox in bboxes:
-    for data_type in data_types:
+
+  for data_type in data_types:
+
+    fetcher = data_fetcher_factory(data_type)
+
+    for bbox in bboxes:
 
       # get the last cached date for this bbox
       date = crud.get_last_cached_date(db, bbox, data_type)
+
       logging.info(f"Update bbox {bbox.id}, "
             f"for data type {data_type.name}, "
             f"last data from: {date}")
-
-      query_params = get_query_params(data_type, bbox, date)
-
-      url = data_type.base_url
-      if not (new_data := get_data_for_bbox(url, query_params, bbox)):
-        logging.info(f"No new data for bbox {bbox.id}")
-        continue
-
-      if "error" in new_data:
-        logging.error(
-          f"Error in {data_type.name} "
-          f"bb:{bbox.id}: {new_data['error']}")
-        continue
       
-      if not (surveys := new_data['features']):
-        logging.info(f"No new data for bbox {bbox.id}")
+      if not (results := fetcher.get_data(bbox, date)):
         continue
 
-      time_key = "ENTERED_DATE" if data_type.name == "multibeam" else "ARRIVAL_DATE"
-      # get the latest date from the new data, this will be cached 
-      latest_date = surveys[0]["attributes"][time_key] # it's sorted
-      latest_datetime = datetime.fromtimestamp(latest_date / 1000.0)
+      latest_datetime = results.get_latest_datetime()
       logging.info(f"Latest date for bbox {bbox.id}: {latest_datetime}")
 
+
+      # filter out any surveys that are older than the last cached date
+      surveys = results.data
       if date is not None:
-        surveys = [
-          s for s in surveys
-          if s["attributes"][time_key] / 1000.0 > date.timestamp()
-        ]
+        surveys = [s for s in results.data if s.time > date]
 
       # upsert in the database
       crud.set_last_cached_date(db, bbox, data_type, latest_datetime)
@@ -188,52 +92,13 @@ def check_for_new_data(
       if surveys:
         notifications_by_user[bbox.owner_id].append(
           {
-            "bbox_id": bbox,
-            "data_type": data_type,
+            "bbox": results.bbox,
+            "data_type": results.description,
             "new_surveys": surveys,
-            "url": build_url(url, query_params)
+            "url": results.json_url
           }
         )
   return notifications_by_user
-
-
-@dataclass
-class SurveyDataPoint:
-  """ A generalized class to hold survey data of any type."""
-  time: datetime | None = None
-  download_url: str | None = None
-  platform: str | None = None
-  name: str | None = None
-
-@dataclass
-class SurveyDataList:
-  """ A generalized class to hold a list of SurveyDataPoints."""
-  data: list[SurveyDataPoint] = []
-  json_url: str | None = None
-  data_type: str | None = None
-  bbox: models.BoundingBox | None = None
-
-  def add(self, time, download_url, platform, name):
-    self.data.append(SurveyDataPoint(time, download_url, platform, name))
-
-
-class DataFetcherBase:
-  """ Base class for fetching data from the NOAA API.
-  
-  Subclasses should implement the get_data method to return a SurveyDataList,
-  mapping any data source specific fields to the SurveyDataPoint fields where
-  appropriate.
-  """
-  def __init__(self, base_url: str):
-    self.base_url = base_url
-  
-  def get_data(
-      self, bbox: models.BoundingBox, since: datetime | None) -> SurveyDataList:
-    raise NotImplementedError
-
-
-class MultibeamDataFetcher(DataFetcherBase):
-  pass
 
 
 def main():
@@ -271,7 +136,7 @@ def main():
       "subject": "There is new NOAA data available!",
       "html": email_body
     })
-    logging.info(f"Email sent to {user.id} with status: {r}")
+    logging.info(f"Email sent to {user.id} (result: {r})")
 
 
 if __name__ == "__main__":

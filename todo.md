@@ -1,7 +1,5 @@
 Backend
 - make sure jinja is set up to autoescape html (I think it isn't the default)
-- abstract things for emails, webhooks, and hitting the different endpoints
-  so it's less hacked in / coupled + easier to change and extend
 - probably need email verification to avoid spam
 - add simple rate limiting
 - add webhook instead of email as an option for notifications

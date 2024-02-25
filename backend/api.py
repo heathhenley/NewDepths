@@ -43,6 +43,7 @@ app = FastAPI(
   description=__doc__)
 
 app.mount("/static", staticfiles.StaticFiles(directory="static"), name="static")
+
 templates = templating.Jinja2Templates(directory="templates")
 
 # OAuth2 scheme
