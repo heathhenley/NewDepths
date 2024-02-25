@@ -1,4 +1,5 @@
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import datetime
 import logging
 import os
@@ -194,6 +195,45 @@ def check_for_new_data(
           }
         )
   return notifications_by_user
+
+
+@dataclass
+class SurveyDataPoint:
+  """ A generalized class to hold survey data of any type."""
+  time: datetime | None = None
+  download_url: str | None = None
+  platform: str | None = None
+  name: str | None = None
+
+@dataclass
+class SurveyDataList:
+  """ A generalized class to hold a list of SurveyDataPoints."""
+  data: list[SurveyDataPoint] = []
+  json_url: str | None = None
+  data_type: str | None = None
+  bbox: models.BoundingBox | None = None
+
+  def add(self, time, download_url, platform, name):
+    self.data.append(SurveyDataPoint(time, download_url, platform, name))
+
+
+class DataFetcherBase:
+  """ Base class for fetching data from the NOAA API.
+  
+  Subclasses should implement the get_data method to return a SurveyDataList,
+  mapping any data source specific fields to the SurveyDataPoint fields where
+  appropriate.
+  """
+  def __init__(self, base_url: str):
+    self.base_url = base_url
+  
+  def get_data(
+      self, bbox: models.BoundingBox, since: datetime | None) -> SurveyDataList:
+    raise NotImplementedError
+
+
+class MultibeamDataFetcher(DataFetcherBase):
+  pass
 
 
 def main():
