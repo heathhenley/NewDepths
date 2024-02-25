@@ -19,6 +19,9 @@ from fastapi import (
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from sqlalchemy.orm import Session
 
 from db import database, crud, models
@@ -48,6 +51,10 @@ templates = templating.Jinja2Templates(directory="templates")
 
 # OAuth2 scheme
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 # DB Dependency
@@ -114,7 +121,9 @@ def read_user_info(
 
 
 @app.post("/users", response_model=schemas.User, tags=["auth"])
+@limiter.limit("10/minute")
 def create_user(
+    request: Request,
     user: schemas.UserFromForm,
     db: Session = Depends(get_db)):
   """ Create a new user.
@@ -142,7 +151,9 @@ def create_user(
 
 
 @app.post("/token", tags=["auth"])
+@limiter.limit("10/minute")
 def login_for_access_token(
+   request: Request,
    form_data: OAuth2PasswordRequestForm = Depends(),
    db: Session = Depends(get_db)):
   # try to get the user from the database
@@ -187,6 +198,7 @@ def get_datatypes(db: Session = Depends(get_db)):
   """
   return crud.get_data_types(db)
 
+
 @app.get("/api/bboxes", tags=["notifications"])
 def get_bboxes(
    user: schemas.User = Depends(get_user),
@@ -199,7 +211,9 @@ def get_bboxes(
 
 
 @app.post("/api/bboxes", tags=["notifications"])
+@limiter.limit("10/minute")
 def add_bbox(
+  request: Request,
   bbox: schemas.BoundingBox,
   user: Annotated[schemas.User, Depends(get_user)],
   db: Session = Depends(get_db)):
@@ -241,6 +255,7 @@ def bbox_form(request: Request):
 
 
 @app.post("/bbox_form")
+@limiter.limit("10/minute")
 def bbox_form(
     request: Request,
     top_left_lat: Annotated[float, Form()],
@@ -282,6 +297,7 @@ def login(request: Request):
 
 
 @app.post("/login")
+@limiter.limit("10/minute")
 def login(
     request: Request,
     username: Annotated[str, Form()],
@@ -329,6 +345,7 @@ def register(request: Request):
 
 
 @app.post("/register")
+@limiter.limit("10/minute")
 def register(
     request: Request,
     username: Annotated[str, Form()],
