@@ -1,7 +1,9 @@
 <div class="flex flex-col p-2" id="form">
   <form action="/login" method="POST"
    class="flex flex-col gap-4">
+    <label for="username">Username</label>
     <input type="text" name="username" placeholder="Username" />
+    <label for="password">Password</label>
     <input type="password" name="password" placeholder="Password" />
     <div id="error"></div>
     <button type="submit" class="bg-blue-500 text-white p-2 rounded-md">

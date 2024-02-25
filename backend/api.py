@@ -171,6 +171,11 @@ def is_valid_bbox(
   return top_left_lat > bottom_right_lat and top_left_lon < bottom_right_lon
 
 
+def strong_password(password: str):
+  """ Check if the password is strong enough. """
+  return len(password) >= 16
+
+
 @app.get(
     "/api/datatypes",
     tags=["notifications"],
@@ -321,4 +326,70 @@ def register(request: Request):
       "partials/register.html", {"request": request})
   return templates.TemplateResponse(
     "index.html", {"request": request, "register": "true"})
+
+
+@app.post("/register")
+def register(
+    request: Request,
+    username: Annotated[str, Form()],
+    email: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    password_confirm: Annotated[str, Form()],
+    db: Session = Depends(get_db)):
+
+  if not username or not email or not password or not password_confirm:
+    return templates.TemplateResponse(
+      "index.html", {
+        "request": request,
+        "register": "true",
+        "error": "All fields are required"}
+    )
+
+  if (crud.get_user_by_email(db, email)):
+    return templates.TemplateResponse(
+      "index.html", {
+        "request": request,
+        "register": "true",
+        "error": "Email already registered"}
+    )
+
+  if password != password_confirm:
+    return templates.TemplateResponse(
+      "index.html", {
+        "request": request,
+        "register": "true",
+        "error": "Passwords do not match"}
+    )
+
+  if not strong_password(password):
+    return templates.TemplateResponse(
+      "index.html", {
+        "request": request,
+        "register": "true",
+        "error": "Password is not strong enough"}
+    )
+
+  user_create = schemas.UserCreate(
+    hashed_password=hash_password(password),
+    username=username,
+    email=email,
+  )
+  crud.create_user(db, user_create)
+
+  # log user in automatically after registering
+  user = authenticate_user(db, username, password)
+  access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+  access_token = create_access_token(
+    data={"sub": user.username},
+    expires_delta=access_token_expires
+  )
+  request = templates.TemplateResponse(
+      "index.html", {"request": request, "current_user": user})
+  request.set_cookie(
+    key="token",
+    value=access_token,
+    httponly=True,
+    max_age=60*int(ACCESS_TOKEN_EXPIRE_MINUTES)
+  )
+  return request
 

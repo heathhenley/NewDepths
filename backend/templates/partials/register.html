@@ -1,14 +1,32 @@
 <div class="flex flex-col p-2" id="form">
-  <form submit="/login" class="flex flex-col gap-4">
-    <label for="username">Username</label>
-    <input type="text" name="username" placeholder="Username" />
-    <label for="password">Password</label>
-    <input type="password" name="password" placeholder="Password" />
-    <label for="password_confirm">Confirm Password</label>
-    <input type="password" name="password_confirm" placeholder="Password" />
-    <label for="email">Email</label>
-    <input type="email" name="email" placeholder="Email" />
-    <div id="error"></div>
+  <form action="/register" method="POST" class="flex flex-col gap-4">
+    {% if error %}
+      <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <strong class="font-bold">Error:</strong>
+        <span class="block sm:inline">{{ error }}</span>
+      </div>
+    {% endif %}
+    <formgroup>
+      <label for="username">Username</label>
+      <input type="text" name="username" placeholder="Username" />
+    </formgroup>
+    <formgroup class="flex flex-col gap-2">
+      <formgroup>
+        <label for="email">Email</label>
+        <input type="email" name="email" placeholder="Email" />
+      </formgroup>
+      <div>
+        <label for="password">Password</label>
+        <input type="password" name="password" placeholder="Password" />
+        <label for="password_confirm">Confirm Password</label>
+        <input type="password" name="password_confirm" placeholder="Password"/>
+      </div>
+      <div id="password-rules"
+       class="text-xs bg-blue-100 border border-blue-400 text-blue-700 px-4 py-2 rounded relative"
+       role="alert">
+        Please use a strong, unique password, of length greater than 16 characters
+      </div>
+    </formgroup>
     <button type="submit" class="bg-blue-500 text-white p-2 rounded-md">
       Register
   </form>

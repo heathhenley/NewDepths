@@ -5,6 +5,10 @@ Backend
 - add webhook instead of email as an option for notifications
 - style everything better, make it look nice
 - add password rules and validation on client and server
+- configurable notification settings?
+  - email vs webhook
+  - frequency (max once per day, once per week, etc)
+  - only mbes, only csb, both, etc
 
 Frontend
 - show users existing bboxes on map ? 
