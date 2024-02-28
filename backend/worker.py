@@ -132,6 +132,7 @@ def main():
     email_body = make_email_body(notifications)
     r = resend.Emails.send({
       "from": "data@updates.newdepths.xyz",
+      "reply_to": "data@newdepths.xyz",
       "to": user.email,
       "subject": "There is new NOAA data available!",
       "html": email_body

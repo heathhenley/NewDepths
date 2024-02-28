@@ -233,6 +233,7 @@ def add_bbox(
 
 
 @app.get("/")
+@limiter.limit("60/minute")
 def index(request: Request, db: Session = Depends(get_db)):
   current_user = None
   try:
@@ -244,7 +245,7 @@ def index(request: Request, db: Session = Depends(get_db)):
     "index.html", {"request": request, "current_user": current_user})
 
 
-@app.get("/bbox_form")
+@app.get("/bbox_form", include_in_schema=False)
 def bbox_form(request: Request):
   if request.headers.get("hx-request"):
     return templates.TemplateResponse(
@@ -253,7 +254,7 @@ def bbox_form(request: Request):
     "index.html", {"request": request, "bbox_form": "true"})
 
 
-@app.post("/bbox_form")
+@app.post("/bbox_form", include_in_schema=False)
 @limiter.limit("10/minute")
 def bbox_form(
     request: Request,
@@ -286,7 +287,7 @@ def bbox_form(
     "partials/done.html", {"request": request})
 
 
-@app.get("/login")
+@app.get("/login", include_in_schema=False)
 def login(request: Request):
   if request.headers.get("hx-request"):
     return templates.TemplateResponse(
@@ -295,7 +296,7 @@ def login(request: Request):
     "index.html", {"request": request, "login": "true"})
 
 
-@app.post("/login")
+@app.post("/login", include_in_schema=False)
 @limiter.limit("10/minute")
 def login(
     request: Request,
@@ -326,7 +327,7 @@ def login(
   return response
 
 
-@app.get("/logout")
+@app.get("/logout", include_in_schema=False)
 def logout(request: Request):
   response = templates.TemplateResponse(
     "index.html", {"request": request})
@@ -334,7 +335,7 @@ def logout(request: Request):
   return response
 
 
-@app.get("/register")
+@app.get("/register", include_in_schema=False)
 def register(request: Request):
   if request.headers.get("hx-request"):
     return templates.TemplateResponse(
@@ -343,7 +344,7 @@ def register(request: Request):
     "index.html", {"request": request, "register": "true"})
 
 
-@app.post("/register")
+@app.post("/register", include_in_schema=False)
 @limiter.limit("10/minute")
 def register(
     request: Request,
