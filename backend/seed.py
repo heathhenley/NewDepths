@@ -37,17 +37,6 @@ def main():
         description="NOAA CSB Data (points)"
     ))
   db.commit()
-  
-  res = db.query(models.DataType).filter_by(name="csb1").first()
-  if not res:
-    db.add(
-      models.DataType(
-        name="csb1",
-        base_url=NOAA_CSB_LINES_URL,
-        description="NOAA CSB Data (lines)"
-    ))
-  db.commit()
-
 
 if __name__ == "__main__":
   main()

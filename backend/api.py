@@ -232,7 +232,7 @@ def add_bbox(
   return {"message": "New bounding box added!"}
 
 
-@app.get("/")
+@app.get("/", include_in_schema=False)
 @limiter.limit("60/minute")
 def index(request: Request, db: Session = Depends(get_db)):
   current_user = None

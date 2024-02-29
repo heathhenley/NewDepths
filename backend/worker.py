@@ -23,7 +23,7 @@ def get_db():
     db.close()
 
 
-# TODO Make this a template jinja2 template
+# TODO Make this a jinja2 template
 def make_email_body(notifications):
   """ Make the email body for the user. """
   body = "<h1> New data found for your bounding boxes! </h1>"
@@ -50,6 +50,10 @@ def make_email_body(notifications):
     if len(new_surveys) > 5:
       body += f"<p>And {len(new_surveys) - 5} more...</p>"
     body += f'<a href={json_url}> API CALL (full JSON) </a>'
+  body += """
+    <p style="color:gray;font-size:0.75rem">Thanks for using New Depths! - I haven't implemented a way to
+    unsubscribe / delete your account yet. If that's something you want to do,
+    just reply to this email and I'll take care of it.</p>"""
   return body
 
 
