@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 from db.database import SessionLocal
 from db import crud, models
-from fetchers.data_fetchers import data_fetcher_factory
+from fetchers.data_fetchers import data_fetcher_factory, SurveyDataList
 
 
 load_dotenv()
@@ -24,14 +24,14 @@ def get_db():
 
 
 # TODO Make this a jinja2 template
-def make_email_body(notifications):
+def make_email_body(notifications: SurveyDataList):
   """ Make the email body for the user. """
   body = "<h1> New data found for your bounding boxes! </h1>"
   for notification in notifications:
-    bbox = notification["bbox"]
-    data_type = notification["data_type"]
-    json_url = notification["url"]
-    new_surveys = notification["new_surveys"]
+    bbox = notification.bbox
+    data_type = notification.description
+    json_url = notification.json_url
+    new_surveys = notification.data
 
     body += f"<h2> New '{data_type}' data for bbox</h2>"
     body += (
@@ -84,24 +84,17 @@ def check_for_new_data(
       latest_datetime = results.get_latest_datetime()
       logging.info(f"Latest date for bbox {bbox.id}: {latest_datetime}")
 
-
       # filter out any surveys that are older than the last cached date
-      surveys = results.data
       if date is not None:
         surveys = [s for s in results.data if s.time > date]
+        results.data = surveys
 
       # upsert in the database
       crud.set_last_cached_date(db, bbox, data_type, latest_datetime)
 
-      if surveys:
-        notifications_by_user[bbox.owner_id].append(
-          {
-            "bbox": results.bbox,
-            "data_type": results.description,
-            "new_surveys": surveys,
-            "url": results.json_url
-          }
-        )
+      if results.data:
+        notifications_by_user[bbox.owner_id].append(results)
+
   return notifications_by_user
 
 
