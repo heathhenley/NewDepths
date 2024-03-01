@@ -1,7 +1,6 @@
 {% extends "shared/_layout.html" %}
 {% block main_content %}
-<section id="container" class="w-full md:w-3/4 h-1/2 flex flex-col items-center">
-  Account for user: {{ current_user.username }}
+<section id="container" class="w-full md:w-3/4 h-1/2 flex flex-col items-center py-4">
   {% include "partials/bbox_table.html" %}
 </section>
 {% endblock %}

@@ -13,8 +13,9 @@ from typing import Annotated
 from dotenv import load_dotenv
 from fastapi import (
   FastAPI, Form, Depends, HTTPException, status,
-  templating, staticfiles, Request
+  templating, staticfiles, Request, Response
 )
+from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -415,12 +416,28 @@ def account(request: Request, db: Session = Depends(get_db)):
   try:
     token = request.cookies.get("token")
     user = get_user(token, db)
-  except (HTTPException, KeyError):
-    return HTTPException(
-      status_code=302,
-      detail="Redirecting...",
-      headers={"Location": "/"}
-    )
+  except (HTTPException, KeyError, AttributeError):
+    # redirect to home if not logged in
+    return RedirectResponse("/")
   return templates.TemplateResponse(
     "account.html", {"request": request, "current_user": user})
   
+@app.delete("/bboxes/{bbox_id}", include_in_schema=False)
+@limiter.limit("10/minute")
+def delete_bbox(
+    request: Request,
+    bbox_id: int,
+    db: Session = Depends(get_db)):
+  try:
+    token = request.cookies.get("token")
+    user = get_user(token, db)
+  except (HTTPException, KeyError):
+    return HTTPException(
+      status_code=204,
+    )
+  if not crud.delete_user_bbox(db, bbox_id, user.id):
+    return HTTPException(
+      status_code=204,
+      detail="Invalid permission, or invalid bbox id"
+    )
+  return Response(status_code=200) 

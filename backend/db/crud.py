@@ -48,6 +48,23 @@ def get_user_bboxes(db: Session, user_id: int) -> list[schemas.BoundingBox]:
       .all()
   )
 
+def delete_user_bbox(db: Session, bbox_id: int, user_id: int):
+  # delete a bbox, but only if it belongs to the user
+  db_bbox = (
+    db.query(models.BoundingBox)
+      .filter(models.BoundingBox.id == bbox_id)
+      .filter(models.BoundingBox.owner_id == user_id)
+      .first()
+  )
+  if db_bbox:
+    # get the cache entries for this bbox and delete them too
+    db.query(models.CacheBoundingBoxUpdate).filter(
+      models.CacheBoundingBoxUpdate.bbox_id == bbox_id).delete()
+    db.delete(db_bbox)
+    db.commit()
+    return True
+  return False
+  
 
 def get_all_bboxes(db: Session) -> list[models.BoundingBox]:
   return db.query(models.BoundingBox).all()
