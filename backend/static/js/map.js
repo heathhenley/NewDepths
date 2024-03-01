@@ -1,5 +1,5 @@
 // Show basic map
-const map = L.map("map").setView([51.505, -0.09], 13);
+const map = L.map("map").setView([41.0, -72], 5);
 const layer = L.tileLayer(
   "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
   {
@@ -31,22 +31,51 @@ const currentBbox = {
   end_lat: 0,
   end_lon: 0,
 };
-const boxes = new Array();
+const boxes = new Array(); 
+let draggingTheMouse = false;
 
 // handle mouse events to draw a bounding box
 map.on("mousedown", function (e) {
   if (map.dragging.enabled()) {
     return;
   }
+  draggingTheMouse = true;
   currentBbox.start_lat = e.latlng.lat;
   currentBbox.start_lon = e.latlng.lng;
+});
+
+map.on("mousemove", function (e) {
+  if (map.dragging.enabled()) {
+    return;
+  }
+  if (currentBbox.start_lat === 0 && currentBbox.start_lon === 0) {
+    return;
+  }
+  if (!draggingTheMouse) {
+    return;
+  }
+
+  map.eachLayer(function (layer) {
+    if (layer instanceof L.Polygon) {
+      map.removeLayer(layer);
+    }
+  });
+  // ok we're dragging the mouse and we have a start point, draw the
+  // rectangle that's being dragged
+  const currentPolygon = L.polygon([
+    [currentBbox.start_lat, currentBbox.start_lon],
+    [currentBbox.start_lat, e.latlng.lng],
+    [e.latlng.lat, e.latlng.lng],
+    [e.latlng.lat, currentBbox.start_lon],
+  ]);
+  currentPolygon.addTo(map);
 });
 
 map.on("mouseup", function (e) {
   if (map.dragging.enabled()) {
     return;
   }
-
+  draggingTheMouse = false;
   currentBbox.end_lat = e.latlng.lat;
   currentBbox.end_lon = e.latlng.lng;
 
