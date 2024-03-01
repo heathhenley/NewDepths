@@ -410,3 +410,17 @@ def register(
   )
   return request
 
+@app.get("/account", include_in_schema=False)
+def account(request: Request, db: Session = Depends(get_db)):
+  try:
+    token = request.cookies.get("token")
+    user = get_user(token, db)
+  except (HTTPException, KeyError):
+    return HTTPException(
+      status_code=302,
+      detail="Redirecting...",
+      headers={"Location": "/"}
+    )
+  return templates.TemplateResponse(
+    "account.html", {"request": request, "current_user": user})
+  
