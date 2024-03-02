@@ -19,7 +19,7 @@ Backend
   - only mbes, only csb, both, etc
 
 Frontend
-- show the box on the map as you're dragging it
+- log in form is not centered correctly when the page is large
 - show users existing bboxes on map ? 
 - show users existing bboxes in list ? 
 - user can delete their own bboxes ?
