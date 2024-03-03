@@ -2,8 +2,26 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>{% block title %} Depth data notifications {% endblock %}</title>
-    <meta description="Get email notifications when new Multibeam Echosounder or Crowd-sourced Bathymetry data becomes available from various public datasources." />
+    <title>
+      {% block title %} NewDepths.xyz | Depth data notifications {% endblock %}
+    </title>
+    <meta
+      description="Get email notifications when new Multibeam Echosounder or Crowd-sourced Bathymetry data becomes available from various public datasources."
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta twitter:card="summary" />
+    <meta twitter:site="@Heath_Henley" />
+    <meta twitter:title="NewDepths.xyz" />
+    <meta
+      twitter:description="Get email notifications when new Multibeam Echosounder or Crowd-sourced Bathymetry data becomes available from various public datasources."
+    />
+    <meta twitter:image="/static/social.png" />
+    <meta og:title="NewDepths.xyz" />
+    <meta
+      og:description="Get email notifications when new Multibeam Echosounder or Crowd-sourced Bathymetry data becomes available from various public datasources."
+    />
+    <meta og:image="/static/social.png" />
+    <link rel="icon" href="/static/favicon.ico" />
     <link
       rel="stylesheet"
       href="/static/font-awesome-4.7.0/css/font-awesome.min.css"
@@ -18,13 +36,11 @@
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
       crossorigin=""
     />
-    <link rel="stylesheet" href="https://unpkg.com/@bopen/leaflet-area-selection@0.6.1/dist/index.css" />
     <script
       src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
       crossorigin=""
     ></script>
-    <script src="https://unpkg.com/@bopen/leaflet-area-selection@0.6.1/dist/index.umd.js"></script>
     <link rel="stylesheet" href="/static/style.css" />
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
@@ -40,23 +56,37 @@
       </div>
       <div>
         {% if current_user %}
-          <a href="/account" class="underline">Account</a> | 
-          <a href="/logout" class="underline">Logout</a>
+        <a href="/account" class="underline">Account</a> |
+        <a href="/logout" class="underline">Logout</a>
         {% else %}
-          <a href="/login" class="underline">Login</a>
+        <a href="/login" class="underline">Login</a>
         {% endif %}
       </div>
     </header>
 
-
-    <main class="h-full w-full flex flex-col items-center p-2">{% block main_content %}{% endblock %}</main>
+    <main class="h-full w-full flex flex-col items-center p-2">
+      {% block main_content %}{% endblock %}
+    </main>
 
     <footer class="flex justify-center p-2 text-xs">
       <div>
         Made the new old way -
-        <a class="underline" href="https://fastapi.tiangolo.com/" target="_blank">FastAPI</a>, <a class="underline" href="https://tailwindcss.com/" target="_blank">TailwindCSS</a> and
-        <a class="underline" href="https://htmx.org" target="_blank">HTMX.</a> Running on
-        <a class="underline" href="https://railway.app/" target="_blank">Railway</a> -
+        <a
+          class="underline"
+          href="https://fastapi.tiangolo.com/"
+          target="_blank"
+          >FastAPI</a
+        >,
+        <a class="underline" href="https://tailwindcss.com/" target="_blank"
+          >TailwindCSS</a
+        >
+        and
+        <a class="underline" href="https://htmx.org" target="_blank">HTMX.</a>
+        Running on
+        <a class="underline" href="https://railway.app/" target="_blank"
+          >Railway</a
+        >
+        -
         <a class="underline" href="https://github.com/heathhenley/NewDepths"
           ><i class="fa fa-brands fa-github"></i>
         </a>
