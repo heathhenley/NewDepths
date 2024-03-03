@@ -1,4 +1,5 @@
 Backend
+- dry out 'get user from cookie' code into a dependency
 - maybe add some limits?
   - how many bboxes can a user have? - maybe like 5?
     - just add a check and return an error if they try to add more server side
@@ -17,6 +18,9 @@ Backend
   - email vs webhook
   - frequency (max once per day, once per week, etc)
   - only mbes, only csb, both, etc
+- support multiple emails per user / multiple webhooks per user
+  - configure boxes to notify different emails/webhooks
+  - configure boxes to only apply to certain data
 
 Frontend
 - show users existing bboxes on map ? 
