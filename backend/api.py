@@ -1,4 +1,4 @@
-""" NOAA CSB/MBES Notification API
+""" NewDepths.xyz CSB/MBES Notification API
 
 An api to subscribe to notifications for new data within a user
 defined bounding box. At the moment, supports MBES  and CSB data from NOAA.
@@ -45,7 +45,16 @@ app = FastAPI(
   docs_url="/docs",
   redoc_url=None,
   title="NOAA CSB/MBES Notification API",
-  description=__doc__)
+  description=__doc__,
+  contact={
+    "name": "Heath Henley",
+    "email": "heath@newdepths.xyz"
+  },
+  license_info={
+    "name": "MIT License",
+    "url": "https://opensource.org/licenses/MIT"
+  }
+)
 
 app.mount("/static", staticfiles.StaticFiles(directory="static"), name="static")
 
