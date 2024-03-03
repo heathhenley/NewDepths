@@ -13,7 +13,6 @@ def get_db():
 def main():
   NOAA_MULTIBEAM_URL = r"https://gis.ngdc.noaa.gov/arcgis/rest/services/web_mercator/multibeam_dynamic/MapServer/0/query"
   NOAA_CSB_POINTS_URL = r"https://gis.ngdc.noaa.gov/arcgis/rest/services/csb/MapServer/0/query"
-  NOAA_CSB_LINES_URL = r"https://gis.ngdc.noaa.gov/arcgis/rest/services/csb/MapServer/1/query"
 
   db = next(get_db())
 

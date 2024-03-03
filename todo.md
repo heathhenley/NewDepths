@@ -1,15 +1,10 @@
 Backend
 - dry out 'get user from cookie' code into a dependency
-- maybe add some limits?
-  - how many bboxes can a user have? - maybe like 5?
-    - just add a check and return an error if they try to add more server side
-  - how much area can a bbox cover?
 - figure out query with since date included
   - reduce bandwidth usage
   - more useful in the webhook case probably
   - it just needs to be manually added, if the '>' in the query gets url
     encoded it breaks the query
-- make sure jinja is set up to autoescape html (I think it isn't the default)
 - probably need email verification to avoid spam
 - add webhook instead of email as an option for notifications
 - style everything better, make it look nice
@@ -24,8 +19,7 @@ Backend
 
 Frontend
 - show users existing bboxes on map ? 
-- show users existing bboxes in list ? 
 - user can edit email
 - user can delete account
 - switch to esri web map? they have some controls and stuff already implemented
-  as 'widgets' - but be nicer
+  as 'widgets' - might be nicer
