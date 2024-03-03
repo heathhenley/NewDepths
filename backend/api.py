@@ -28,6 +28,8 @@ from db import database, crud, models
 from schemas import schemas
 
 
+MAX_BOXES_PER_USER = 5
+
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
@@ -282,7 +284,15 @@ def bbox_form(
     return templates.TemplateResponse(
       "partials/save_bbox.html",
       {"request": request, "error": "Invalid bounding box"})
+
   db_user = crud.get_user_by_email(db, user.email)
+  if len(db_user.bboxes) > MAX_BOXES_PER_USER:
+    return templates.TemplateResponse(
+      "partials/save_bbox.html",
+      {"request": request,
+       "error": f"You can only have {MAX_BOXES_PER_USER} bounding boxes"})
+
+  # good to save bbox
   crud.create_user_bbox(db, bbox, db_user.id)
   return templates.TemplateResponse(
     "partials/done.html", {"request": request})
