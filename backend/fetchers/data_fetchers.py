@@ -87,7 +87,7 @@ class MultibeamDataFetcher(DataFetcherBase):
     self, url: str, query_params: dict, bbox: models.BoundingBox) -> str | None:
     """ Make the actual request to the NOAA API. """
     try:
-      res = requests.get(url, params=query_params, timeout=5)
+      res = requests.get(url, params=query_params, timeout=60)
       if res.status_code != 200:
         raise Exception(f"Bad response from NOAA: {res.status_code}")
     except Exception as e:
