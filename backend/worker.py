@@ -51,9 +51,10 @@ def make_email_body(notifications: SurveyDataList):
       body += f"<p>And {len(new_surveys) - 5} more...</p>"
     body += f'<a href={json_url}> API CALL (full JSON) </a>'
   body += """
-    <p style="color:gray;font-size:0.75rem">Thanks for using New Depths! - I haven't implemented a way to
-    unsubscribe / delete your account yet. If that's something you want to do,
-    just reply to this email and I'll take care of it.</p>"""
+    <p style="color:gray;font-size:0.75rem">Thanks for using NewDepths.xyz! - I
+    haven't implemented a way to unsubscribe / delete your account yet. If 
+    that's something you want to do, just reply to this email and I'll take 
+    care of it.</p>"""
   return body
 
 
