@@ -1,18 +1,37 @@
-<div class="flex flex-col p-2" id="form">
-  <p class="text-2xl">You are not logged in</p>
-  <p class="text-sm">
-    Please log in to make a bounding box and get notified when new MBES or CSB
-    data becomes available
-  </p>
-  <span>
-    <a hx-swap="outerHTML"
-      hx-get="/login"
-      hx-target="#form"
-      class="text-blue-500 underline hover:text-blue-700 hover:cursor-pointer">
-      Login</a> or <a hx-swap="outerHTML"
-      hx-get="/register"
-      hx-target="#form"
-      class="text-blue-500 underline hover:text-blue-700 hover:cursor-pointer">
-    Register</a>
-  </span>
+<div class="flex flex-col p-4 gap-4 w-full sm:w-3/4" id="form">
+  <div>
+    <h2 class="text-3xl">What is this?</h2>
+    <p>
+      This is a simple app to send you email notifications when new MBES or CSB
+      data becomes available at NOAA's endpoints. You can select up to 5
+      bounding boxes and get notified when new data becomes available in those
+      areas everyday.
+    </p>
+  </div>
+  <div>
+    <p class="text-2xl">Log in or register to start!</p>
+    <p>
+      Please log in to make a bounding box and get notified when new MBES or CSB
+      data becomes available
+    </p>
+    <span>
+      <a
+        hx-swap="outerHTML"
+        hx-get="/login"
+        hx-target="#form"
+        class="text-blue-500 underline hover:text-blue-700 hover:cursor-pointer"
+      >
+        Login</a
+      >
+      or
+      <a
+        hx-swap="outerHTML"
+        hx-get="/register"
+        hx-target="#form"
+        class="text-blue-500 underline hover:text-blue-700 hover:cursor-pointer"
+      >
+        Register</a
+      >
+    </span>
+  </div>
 </div>
