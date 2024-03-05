@@ -1,5 +1,5 @@
-# new data notifications
-## simple email notifications of new public mbes and csb data
+# NewDepths.xyz
+## Simple email notifications of new public mbes and csb data
 
 This is a simple set up to send you an email of summary periodically of the data
 in a user defined area. The app queries the MBES and CSB from NOAA (at the time,
@@ -7,18 +7,21 @@ maybe more will be added). The user can log in, define a bounding box, and will
 then receive an email with a summary of the new data in that area.
 
 There is an api so that everything could be implemented in a different, better
-frontend. There is also a simple frontend, not very pretty, but demonstrates the
-functionality.
+frontend. There is also a simple frontend, that's not pretty, but demonstrates
+the functionality.
 
 It's live at [newdepths.xyz](https://newdepths.xyz).
 
+I get that people might not want to give their email to a random website, so
+it's also possible to pull down the repo and run it yourself in docker. Feel
+free to reach out or open and issue with any questions or suggestions.
 
-### run it with docker
+### Run it with docker
 If you want to run it, the simplest way is to use docker-compose, if you have
 docker and docker-compose installed. Just run `docker compose up` in the `backend` directory. You can seed with the existing data sources by running
 `docker-compose exec api python seed.py`.
 
-### run it without docker
+### Run it without docker
 If you want to run it without docker, you can do the following (using python 3.10 or later):
 1. Clone the repo
 1. Change into the directory, and `backend`
@@ -34,6 +37,6 @@ send the emails. The `api.py` is the fastapi app that serves the api.
 You will need to set up a `.env` file, like the `.env.example` with your own
 variables.
 
-## contributing
+## Contributing
 Help is welcome! For any issues or suggestions, just open an issue. If you want
 to contribute, open a PR. I'm happy to help you get started!
