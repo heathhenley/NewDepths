@@ -1,0 +1,32 @@
+services:
+  api:
+    build: .
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/code
+    environment:
+      DB_CONNECT_STR: postgresql://postgres:postgres@db:5432/test_db
+      SECRET_KEY: "secret"
+      ALGORITHM: "HS256"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: uvicorn api:app --host 0.0.0.0 --port 80 --reload
+  db:
+    image: postgres:16.2
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: test_db
+      POSTGRES_PORT: 5432
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 20s
+      timeout: 10s
+      start_period: 30s
+      retries: 6
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data

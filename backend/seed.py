@@ -1,7 +1,6 @@
 from db.database import SessionLocal
 from db import models
 
-
 def get_db():
   db = SessionLocal()
   try:
@@ -36,6 +35,7 @@ def main():
         description="NOAA CSB Data (points)"
     ))
   db.commit()
+
 
 if __name__ == "__main__":
   main()

@@ -1,4 +1,4 @@
-""" NewDepths.xyz CSB/MBES Notification API
+""" NewDepths.xyz Bathymetry Data Notification API
 
 An api to subscribe to notifications for new data within a user
 defined bounding box. At the moment, supports MBES  and CSB data from NOAA.
@@ -33,14 +33,16 @@ MAX_BOXES_PER_USER = 5
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
 
 if not all([SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES]):
   raise ValueError("Missing environment variable(s)!")
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 models.Base.metadata.create_all(bind=database.engine)
+
 app = FastAPI(
   docs_url="/docs",
   redoc_url=None,

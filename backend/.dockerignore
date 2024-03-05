@@ -1,0 +1,4 @@
+venv
+.env
+sql_app.db
+pgdata
