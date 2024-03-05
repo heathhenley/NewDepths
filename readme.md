@@ -1,7 +1,7 @@
 # NewDepths.xyz
 ## Simple email notifications of new public mbes and csb data
 
-This is a simple set up to send you an email of summary periodically of the data
+This is a simple set up to send you an email summary periodically of the data
 in a user defined area. The app queries the MBES and CSB from NOAA (at the time,
 maybe more will be added). The user can log in, define a bounding box, and will
 then receive an email with a summary of the new data in that area.
@@ -14,7 +14,7 @@ It's live at [newdepths.xyz](https://newdepths.xyz).
 
 I get that people might not want to give their email to a random website, so
 it's also possible to pull down the repo and run it yourself in docker. Feel
-free to reach out or open and issue with any questions or suggestions.
+free to reach out or open an issue with any questions or suggestions.
 
 ### Run it with docker
 If you want to run it, the simplest way is to use docker-compose, if you have
