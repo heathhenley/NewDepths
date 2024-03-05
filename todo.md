@@ -1,5 +1,7 @@
 Backend
 - dry out 'get user from cookie' code into a dependency
+- set up db backups
+- set up db migrations (alembic?)
 - figure out query with since date included
   - reduce bandwidth usage
   - more useful in the webhook case probably
