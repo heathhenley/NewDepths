@@ -6,6 +6,7 @@ Backend
     (PLATFORM, DOWNLOAD_URL, etc) - so they just need to be parameterized a bit
 - set up db backups
 - set up db migrations (alembic?)
+- should bboxes have names / descriptions?
 - figure out query with since date included
   - reduce bandwidth usage
   - more useful in the webhook case probably
