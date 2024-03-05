@@ -2,15 +2,15 @@
 ## Simple email notifications of new public mbes and csb data
 
 This is a simple set up to send you an email summary periodically of the data
-in a user defined area. The app queries the MBES and CSB from NOAA (at the time,
-maybe more will be added). The user can log in, define a bounding box, and will
-then receive an email with a summary of the new data in that area.
-
-There is an api so that everything could be implemented in a different, better
-frontend. There is also a simple frontend, that's not pretty, but demonstrates
-the functionality.
+in a user defined area. The app queries the MBES, CSB, and NOS data from NOAA 
+(at the time, maybe more will be added). You can log in, define a bounding box, 
+and then receive a daily email with a summary of the new data in that area.
 
 It's live at [newdepths.xyz](https://newdepths.xyz).
+
+There is also an [api](https://newdepths.xyz/docs) so that everything could be implemented in a different, probably better
+frontend. I know the existing front end included with the project is not 
+pretty, but it demonstrates the functionality.
 
 I get that people might not want to give their email to a random website, so
 it's also possible to pull down the repo and run it yourself in docker. Feel
@@ -39,4 +39,6 @@ variables.
 
 ## Contributing
 Help is welcome! For any issues or suggestions, just open an issue. If you want
-to contribute, open a PR. I'm happy to help you get started!
+to contribute, open a PR. I'm happy to help you get started! I'll eventually
+move to using issues - but as I'm the only one working on it right now, I've
+got a bunch of notes in [`todo.md`](/todo.md) that I'm working through.
