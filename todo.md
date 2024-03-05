@@ -1,5 +1,9 @@
 Backend
 - dry out 'get user from cookie' code into a dependency
+- dry out fetchers more
+  - they are all basically the same with different urls, different time
+    attributes (ARRIVAL_DATE, etc), and slightly different return attributes
+    (PLATFORM, DOWNLOAD_URL, etc) - so they just need to be parameterized a bit
 - set up db backups
 - set up db migrations (alembic?)
 - figure out query with since date included

@@ -110,6 +110,10 @@ def main():
   data_types = crud.get_data_types(db)
   bboxes = crud.get_all_bboxes(db)
 
+  if not data_types or not bboxes:
+    logging.error("No data types or bounding boxes found. Exiting.")
+    return 1
+  
   # we want to only notify each user once, so we'll use a defaultdict and track
   # all the new stuff they're interested in, then we can send just one
   # notification / email to each user

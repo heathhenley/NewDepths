@@ -46,7 +46,7 @@ class SurveyDataList:
       return None
     return self.data[0].time
 
-
+# TODO(Heath): These fetchers can be dry'd up
 class DataFetcherBase:
   """ Base class for fetching data from the NOAA API.
   
@@ -139,6 +139,81 @@ class MultibeamDataFetcher(DataFetcherBase):
     return self._map_api_response_to_data_list(bbox, query_params, surveys)
 
 
+class NOSDataFetcher(DataFetcherBase):
+  """ Fetch from the NOAA API and map it to a common response format.
+  
+  Just going to make it easier to use in the rest of the app."""
+
+  def _get_query_params(self, bbox: models.BoundingBox, since: datetime | None):
+    """ Speficic query params for multibeam data. """
+    return {
+      'f': 'json',
+      'where': 'DATE_ADDED IS NOT NULL',
+      'geometry': bbox_to_envelope(bbox),
+      'geometryType': 'esriGeometryEnvelope',
+      'inSR': 4326,
+      'spatialRel': 'esriSpatialRelIntersects',
+      'outFields': 'SURVEY_ID,PLATFORM,DOWNLOAD_URL,DATE_ADDED',
+      'returnGeometry': False,
+      'orderByFields': 'DATE_ADDED DESC'
+    }
+  
+  def _get_data_from_noaa_api(
+    self, url: str, query_params: dict, bbox: models.BoundingBox) -> str | None:
+    """ Make the actual request to the NOAA API. """
+    try:
+      res = requests.get(url, params=query_params, timeout=60)
+      if res.status_code != 200:
+        raise Exception(f"Bad response from NOAA: {res.status_code}")
+    except Exception as e:
+      logging.error(f"Error getting data for bbox {bbox.id}: {e}")
+      return None
+    return res.json()
+
+  def _map_api_response_to_data_list(
+      self,
+      bbox: models.BoundingBox,
+      query_params: dict,
+      surveys: list[dict]) -> SurveyDataList:
+    """ Map the response from the NOAA API to a SurveyDataList. """
+    data = SurveyDataList(
+      json_url=build_url(self.base_url, query_params),
+      description=self.description,
+      bbox=bbox
+    )
+    for survey in surveys:
+      data.add(
+        time=datetime.fromtimestamp(
+          survey["attributes"]["DATE_ADDED"] / 1000.0),
+        download_url=survey["attributes"]["DOWNLOAD_URL"],
+        platform=survey["attributes"]["PLATFORM"],
+      )
+    return data
+ 
+  def get_data(
+      self,
+      bbox: models.BoundingBox,
+      since: datetime | None) -> SurveyDataList | None:
+    """ Fetch nos survey data from the NOAA API. """
+
+    query_params = self._get_query_params(bbox, since)
+    url = self.base_url
+
+    if not (new_data := self._get_data_from_noaa_api(url, query_params, bbox)):
+      return None
+    
+    if "error" in new_data:
+      logging.error(f"Error in multibeam bb:{bbox.id}: {new_data['error']}")
+      return None
+    
+    if not (surveys := new_data['features']):
+      logging.info(f"No new data for bbox {bbox.id}")
+      return None
+  
+    # we have data, need to map it to a SurveyDataList
+    return self._map_api_response_to_data_list(bbox, query_params, surveys)
+
+
 class CSBDataFetcher(DataFetcherBase):
   """ Fetch from the NOAA API and map it to a common response format.
   
@@ -158,7 +233,6 @@ class CSBDataFetcher(DataFetcherBase):
       'orderByFields': 'ARRIVAL_DATE DESC'
     }
 
-  
   def _get_data_from_noaa_api(
     self, url: str, query_params: dict, bbox: models.BoundingBox) -> str | None:
     """ Make the actual request to the NOAA API. """
@@ -221,6 +295,7 @@ def data_fetcher_factory(data_type: models.DataType) -> DataFetcherBase:
     "multibeam": MultibeamDataFetcher,
     "csb0": CSBDataFetcher,
     "csb1": CSBDataFetcher,
+    "nos_survey": NOSDataFetcher
   }
   return map_to_fetcher[data_type.name](
     data_type.base_url, data_type.name, data_type.description)
