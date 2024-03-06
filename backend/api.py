@@ -312,10 +312,14 @@ def bbox_form(
 @app.get("/login", include_in_schema=False)
 def login(request: Request):
   if request.headers.get("hx-request"):
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
       "partials/login.html", {"request": request})
-  return templates.TemplateResponse(
+    response.headers["vary"] = "hx-request"
+    return response
+  response = templates.TemplateResponse(
     "index.html", {"request": request, "login": "true"})
+  response.headers["vary"] = "hx-request"
+  return response
 
 
 @app.post("/login", include_in_schema=False)
