@@ -1,0 +1,14 @@
+{% extends "shared/_layout.html" %}
+{% block main_content %}
+<section id="container" class="w-full md:w-3/4 h-full flex flex-col items-center py-4">
+  <article>
+  <header>
+    Your order has been sent to NOAA. 
+  </header>
+  <div>
+      You will receive an email when your order is ready for download. You
+      can check the status of the order <a href="{{ status_url }}" class="underline">here</a>.
+  </div>
+</article>
+</section>
+{% endblock %}
