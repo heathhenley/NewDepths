@@ -8,6 +8,7 @@ and emails the user about the new data if there is any.
 """
 from datetime import timedelta, datetime, timezone
 import os
+import requests
 from typing import Annotated
 
 from dotenv import load_dotenv
@@ -466,3 +467,81 @@ def delete_bbox(
       detail="Invalid permission, or invalid bbox id"
     )
   return Response(status_code=200) 
+
+
+def bbox_to_flat(bbox: models.BoundingBox):
+  # their convention is southwest corner to northeast corner, with lon first
+  return (f"{bbox.bottom_right_lon}{bbox.top_left_lat}"
+          f"{bbox.top_left_lon}{bbox.bottom_right_lat}")
+
+
+def send_order_to_noaa(
+    bbox: models.BoundingBox,
+    data_type: str,
+    user: models.User):
+  """ Send an order to NOAA for data within the bounding box. """
+  points_url = f"https://q81rej0j12.execute-api.us-east-1.amazonaws.com/order"
+  resp = requests.post(
+    points_url,
+    headers={"Content-Type": "application/json"},
+    json={
+      "bbox": bbox_to_flat(bbox), 
+      "email": user.email,
+      "datasets": {
+        "type": data_type
+      }
+    }
+  )
+  if not resp.ok:
+    raise Exception("Error sending order to NOAA")
+  return resp.json()
+
+
+@app.get("/order/{bbox_id}/{data_type}", include_in_schema=False)
+def order(
+    request: Request,
+    bbox_id: int,
+    data_type: str = "csb",
+    db: Session = Depends(get_db)):
+  try:
+    token = request.cookies.get("token")
+    user = get_user(token, db)
+  except (HTTPException, KeyError, AttributeError):
+    # redirect to home if not logged in
+    # TODO: maybe redirect param so they can get redirected after login?
+    return RedirectResponse("/login")
+  
+  if data_type not in ["csb", "multibeam"]:
+    raise HTTPException(
+      status_code=404,
+      detail="Data type not found"
+    )
+
+  if not (bbox := crud.get_bbox_by_id(db, bbox_id)):
+    raise HTTPException(
+      status_code=404,
+      detail="Bounding box not found"
+    )
+ 
+  if bbox.owner_id != user.id:
+    raise HTTPException(
+      status_code=403,
+      detail="You do not have permission to order data for this bbox"
+    )
+
+  try:  
+    resp = send_order_to_noaa(bbox, data_type, user)
+    pass
+  except Exception as e:
+    print(e)
+    raise HTTPException(
+      status_code=500,
+      detail="Error sending order to NOAA"
+    )
+  return templates.TemplateResponse(
+    "order.html", {
+      "request": request,
+      "current_user": user,
+      "status_url": resp["url"],
+      "message": resp["message"]
+    })

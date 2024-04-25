@@ -14,37 +14,60 @@
         <th scope="col" class="px-6 py-3">ID</th>
         <th scope="col" class="px-6 py-3">Parameters</th>
         <th scope="col" class="px-6 py-3">
+          Request Data 
+        </th>
+        <th scope="col" class="px-6 py-3">
           <span class="sr-only">Delete</span>
         </th>
       </tr>
     </thead>
     <tbody>
       {% for bbox in current_user.bboxes %}
-        <tr class="bg-white border-b" id="bbox{{ bbox.id }}">
-          <th
-            scope="row"
-            class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"
+      <tr class="bg-white border-b" id="bbox{{ bbox.id }}">
+        <th
+          scope="row"
+          class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"
+        >
+          {{ bbox.id }}
+        </th>
+        <td class="px-6 py-4">
+          Top left: {{ "%.4f" | format(bbox.top_left_lat) }}, {{ "%.4f" |
+          format(bbox.top_left_lon) }}<br />
+          Bottom right: {{ "%.4f" | format(bbox.bottom_right_lat) }}, {{ "%.4f"
+          | format(bbox.bottom_right_lon) }}<br />
+        </td>
+
+        <td class="px-6 py-4">
+          Order
+          <a
+            href="/order/{{ bbox.id }}/multibeam"
+            class="font-medium text-blue-600 hover:underline hover:cursor-pointer"
+            alt="Order data for this bounding box"
           >
-            {{ bbox.id }}
-          </th>
-          <td class="px-6 py-4">
-            Top left: {{ "%.4f" | format(bbox.top_left_lat) }}, {{ "%.4f" |
-            format(bbox.top_left_lon) }}<br />
-            Bottom right: {{ "%.4f" | format(bbox.bottom_right_lat) }}, {{ "%.4f"
-            | format(bbox.bottom_right_lon) }}<br />
-          </td>
-          <td class="px-6 py-4 text-right">
-            <a
-              hx-delete="/bboxes/{{ bbox.id }}"
-              hx-confirm="Are you sure you want to delete this bounding box?"
-              hx-target="#bbox{{ bbox.id }}"
-              class="font-medium text-blue-600 hover:underline hover:cursor-pointer"
-              alt="Delete this bounding box"
-            >
-              Delete
-            </a>
-          </td>
-        </tr>
+            MBES
+          </a>
+          or
+          <a
+            href="/order/{{ bbox.id }}/csb"
+            class="font-medium text-blue-600 hover:underline hover:cursor-pointer"
+            alt="Order data for this bounding box"
+          >
+            CSB
+          </a>
+        </td>
+        <td class="px-6 py-4 text-right">
+          <a
+            hx-delete="/bboxes/{{ bbox.id }}"
+            hx-confirm="Are you sure you want to delete this bounding box?"
+            hx-target="#bbox{{ bbox.id }}"
+            class="font-medium text-red-600 hover:underline hover:cursor-pointer"
+            alt="Delete this bounding box"
+          >
+            Delete
+          </a>
+        </td>
+      </tr>
+
       {% endfor %}
     </tbody>
   </table>

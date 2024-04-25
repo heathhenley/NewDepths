@@ -69,6 +69,12 @@ def delete_user_bbox(db: Session, bbox_id: int, user_id: int):
 def get_all_bboxes(db: Session) -> list[models.BoundingBox]:
   return db.query(models.BoundingBox).all()
 
+def get_bbox_by_id(db: Session, bbox_id: int) -> models.BoundingBox:
+  return (
+    db.query(models.BoundingBox)
+      .filter(models.BoundingBox.id == bbox_id)
+      .first()
+  )
 
 def set_bbox_update(db: Session, bbox_id: int, most_recent_data: str):
   db_cache = models.CacheBoundingBoxUpdate(
