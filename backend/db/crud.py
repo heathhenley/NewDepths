@@ -146,7 +146,8 @@ def create_data_order(
       order_date=data_order.order_date,
       bbox_id=data_order.bbox_id,
       user_id=user_id,
-      data_type=data_order.data_type)
+      data_type=data_order.data_type,
+      last_status="created")
   db.add(db_order)
   db.commit()
   db.refresh(db_order)

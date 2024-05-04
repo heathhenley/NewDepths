@@ -445,7 +445,6 @@ def account(request: Request, db: Session = Depends(get_db)):
   except (HTTPException, KeyError, AttributeError):
     # redirect to home if not logged in
     return RedirectResponse("/")
-  print(user.data_orders)
   return templates.TemplateResponse(
     "account.html", {"request": request, "current_user": user})
   
@@ -552,13 +551,6 @@ def order(
     data_type=data_type
   )
   crud.create_data_order(db, user.id, data_order)
-  
-  try:
-    order_status = requests.get(resp["url"]).json()["status"]
-  except Exception as e:
-    print(e)
-    order_status = "unknown" 
-
   return templates.TemplateResponse(
     "partials/order_table.html", {
       "request": request,
@@ -600,4 +592,7 @@ def order_status(
   except Exception as e:
     print(e)
     order_status = "unknown"
+  
+  order.last_status = order_status
+  db.commit()
   return HTMLResponse(order_status)
