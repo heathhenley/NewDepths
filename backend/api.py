@@ -198,7 +198,7 @@ def is_valid_bbox(
 
 def strong_password(password: str):
   """ Check if the password is strong enough. """
-  return len(password) >= 16
+  return len(password) >= 8
 
 
 @app.get(
@@ -410,7 +410,7 @@ def register(
       "index.html", {
         "request": request,
         "register": "true",
-        "error": "Password is not strong enough"}
+        "error": "Password must be at least 8 characters long"}
     )
 
   user_create = schemas.UserCreate(
