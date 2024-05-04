@@ -1,0 +1,52 @@
+<div id="order_table" class="overflow-x-auto shadow-md sm:rounded-lg w-full">
+  <table class="w-full text-sm text-left rtl:text-right text-gray-500">
+    <caption
+      class="p-5 text-lg font-semibold text-left rtl:text-right text-gray-900 bg-white"
+    >
+      Your Recent Orders
+      <p class="mt-1 text-sm font-normal text-gray-500">
+        Orders you have submitted to NOAA recently.
+      </p>
+    </caption>
+    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+      <tr>
+        <th scope="col" class="px-6 py-3">ID</th>
+        <th scope="col" class="px-6 py-3">BBOX</th>
+        <th scope="col" class="px-6 py-3">Status</th>
+        <th scope="col" class="px-6 py-3">Data Type</th>
+        <th scope="col" class="px-6 py-3">
+          <span class="sr-only">Check Status</span>
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in current_user.data_orders %}
+      <tr class="bg-white border-b" id="order.id">
+        <th
+          scope="row"
+          class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap"
+        >
+          {{ order.noaa_ref_id }}
+        </th>
+        <td class="px-6 py-4">
+          {{ order.bbox_id }}
+        </td>
+        <td id="order-status-{{ order.id}}" class="px-6 py-4"> {{ order.last_status }}</td>
+        <td class="px-6 py-4">{{ order.data_type }}</td>
+        <td class="px-6 py-4 text-right">
+          <a
+            hx-get="/order_status/{{ order.id }}"
+            hx-swap="innerHTML"
+            hx-target="#order-status-{{ order.id}}"
+            class="font-medium text-blue-600 hover:underline hover:cursor-pointer"
+            alt="Check order status - hits the NOAA API to get the status of the order."
+          >
+            Check status
+          </a>
+
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

@@ -23,13 +23,6 @@ def get_db():
     db.close()
 
 
-def get_order_url(bbox_id: int, data_type: str) -> str:
-  """ Send them to the order page for this box """
-  # only two types supported at the moment
-  dt = "csb" if "csb" in data_type else "multibeam"
-  return f"https://newdepths.xyz/order/{bbox_id}/{dt}"
-
-
 # TODO Make this a jinja2 template
 def make_email_body(notifications: SurveyDataList):
   """ Make the email body for the user. """
@@ -57,8 +50,8 @@ def make_email_body(notifications: SurveyDataList):
     body += "</ul>"
     if len(new_surveys) > 5:
       body += f"<p>And {len(new_surveys) - 5} more...</p>"
-    body += f'<a href={json_url}> API CALL (full JSON results) </a>'
-    body += f'<a href={order_url}> Order data from noaa </a>'
+    body += f'<a href={json_url}> API CALL (full JSON results) </a><br/>'
+    body += f'<a href=https://newdepths.xyz/account> Order data from noaa from your account</a>'
   body += """
     <p style="color:gray;font-size:0.75rem">Thanks for using NewDepths.xyz! - I
     haven't implemented a way to unsubscribe / delete your account yet. If 

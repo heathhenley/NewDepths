@@ -16,7 +16,7 @@ from fastapi import (
   FastAPI, Form, Depends, HTTPException, status,
   templating, staticfiles, Request, Response
 )
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -198,7 +198,7 @@ def is_valid_bbox(
 
 def strong_password(password: str):
   """ Check if the password is strong enough. """
-  return len(password) >= 16
+  return len(password) >= 8
 
 
 @app.get(
@@ -410,7 +410,7 @@ def register(
       "index.html", {
         "request": request,
         "register": "true",
-        "error": "Password is not strong enough"}
+        "error": "Password must be at least 8 characters long"}
     )
 
   user_create = schemas.UserCreate(
@@ -471,8 +471,8 @@ def delete_bbox(
 
 def bbox_to_flat(bbox: models.BoundingBox):
   # their convention is southwest corner to northeast corner, with lon first
-  return (f"{bbox.top_left_lon}{bbox.bottom_right_lat}"
-          f"{bbox.bottom_right_lon}{bbox.top_left_lat}")
+  return (f"{bbox.top_left_lon},{bbox.bottom_right_lat},"
+          f"{bbox.bottom_right_lon},{bbox.top_left_lat}")
 
 
 def send_order_to_noaa(
@@ -503,6 +503,10 @@ def order(
     bbox_id: int,
     data_type: str = "csb",
     db: Session = Depends(get_db)):
+  
+  if not request.headers.get("hx-request"):
+    return RedirectResponse("/account")
+
   try:
     token = request.cookies.get("token")
     user = get_user(token, db)
@@ -531,17 +535,64 @@ def order(
 
   try:  
     resp = send_order_to_noaa(bbox, data_type, user)
-    pass
   except Exception as e:
     print(e)
     raise HTTPException(
       status_code=500,
       detail="Error sending order to NOAA"
     )
+
+  data_order = schemas.DataOrderCreate(
+    noaa_ref_id=resp["url"].split("/")[-1],
+    order_date=datetime.now(timezone.utc).isoformat(),
+    check_status_url=resp["url"],
+    bbox_id=bbox_id,
+    user_id=user.id,
+    data_type=data_type
+  )
+  crud.create_data_order(db, user.id, data_order)
   return templates.TemplateResponse(
-    "order.html", {
+    "partials/order_table.html", {
       "request": request,
       "current_user": user,
       "status_url": resp["url"],
-      "message": resp["message"]
+      "message": resp["message"],
     })
+
+
+@app.get("/order_status/{order_id}", include_in_schema=False)
+def order_status(
+    request: Request,
+    order_id: int,
+    db: Session = Depends(get_db)) -> str:
+  
+  if not request.headers.get("hx-request"):
+    return RedirectResponse("/account")
+  
+  try:
+    token = request.cookies.get("token")
+    user = get_user(token, db)
+  except (HTTPException, KeyError, AttributeError):
+    # redirect to home if not logged in
+    return RedirectResponse("/login")
+  
+  if not (order := crud.get_data_order_by_id(db, order_id)):
+    raise HTTPException(
+      status_code=404,
+      detail="Order not found"
+    )
+  
+  if order.user_id != user.id:
+    raise HTTPException(
+      status_code=403,
+      detail="You do not have permission to view this order"
+    )
+  try:
+    order_status = requests.get(order.check_status_url).json()["status"]
+  except Exception as e:
+    print(e)
+    order_status = "unknown"
+  
+  order.last_status = order_status
+  db.commit()
+  return HTMLResponse(order_status)

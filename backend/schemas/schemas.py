@@ -1,3 +1,4 @@
+import datetime
 from pydantic import BaseModel, EmailStr
 
 
@@ -50,6 +51,17 @@ class DataTypes(BaseModel):
   name: str
   description: str | None = None
   base_url: str
+
+  class Config:
+    from_attributes = True
+
+
+class DataOrderCreate(BaseModel):
+  noaa_ref_id: str
+  order_date: datetime.datetime
+  check_status_url: str | None = None
+  bbox_id: int
+  data_type: str
 
   class Config:
     from_attributes = True
