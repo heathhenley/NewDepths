@@ -472,8 +472,8 @@ def delete_bbox(
 
 def bbox_to_flat(bbox: models.BoundingBox):
   # their convention is southwest corner to northeast corner, with lon first
-  return (f"{bbox.top_left_lon}{bbox.bottom_right_lat}"
-          f"{bbox.bottom_right_lon}{bbox.top_left_lat}")
+  return (f"{bbox.top_left_lon},{bbox.bottom_right_lat},"
+          f"{bbox.bottom_right_lon},{bbox.top_left_lat}")
 
 
 def send_order_to_noaa(
