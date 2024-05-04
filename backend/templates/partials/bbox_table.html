@@ -48,7 +48,10 @@
           </a>
           or
           <a
-            href="/order/{{ bbox.id }}/csb"
+            hx-get="/order/{{ bbox.id }}/csb"
+            hx-swap="innerHTML"
+            hx-target="#order_table_container"
+            data-loading-target="#loading-indicator"
             class="font-medium text-blue-600 hover:underline hover:cursor-pointer"
             alt="Order data for this bounding box"
           >

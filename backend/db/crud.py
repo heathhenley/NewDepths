@@ -48,6 +48,7 @@ def get_user_bboxes(db: Session, user_id: int) -> list[schemas.BoundingBox]:
       .all()
   )
 
+
 def delete_user_bbox(db: Session, bbox_id: int, user_id: int):
   # delete a bbox, but only if it belongs to the user
   db_bbox = (
@@ -69,12 +70,14 @@ def delete_user_bbox(db: Session, bbox_id: int, user_id: int):
 def get_all_bboxes(db: Session) -> list[models.BoundingBox]:
   return db.query(models.BoundingBox).all()
 
+
 def get_bbox_by_id(db: Session, bbox_id: int) -> models.BoundingBox:
   return (
     db.query(models.BoundingBox)
       .filter(models.BoundingBox.id == bbox_id)
       .first()
   )
+
 
 def set_bbox_update(db: Session, bbox_id: int, most_recent_data: str):
   db_cache = models.CacheBoundingBoxUpdate(
@@ -97,6 +100,7 @@ def get_last_cached_date(
       .one_or_none()
     )
   return res[0] if res else None
+
 
 def set_last_cached_date(
     db: Session,
@@ -127,5 +131,31 @@ def set_last_cached_date(
   db.refresh(db_cache)
   return db_cache
 
+
 def get_data_types(db: Session):
   return db.query(models.DataType).all()
+
+
+def create_data_order(
+    db: Session,
+    user_id: int,
+    data_order: schemas.DataOrderCreate) -> models.DataOrder:
+  db_order = models.DataOrder(
+      noaa_ref_id=data_order.noaa_ref_id,
+      check_status_url=data_order.check_status_url,
+      order_date=data_order.order_date,
+      bbox_id=data_order.bbox_id,
+      user_id=user_id,
+      data_type=data_order.data_type)
+  db.add(db_order)
+  db.commit()
+  db.refresh(db_order)
+  return db_order
+
+
+def get_data_order_by_id(db: Session, order_id: int) -> models.DataOrder:
+  return (
+    db.query(models.DataOrder)
+    .filter(models.DataOrder.id == order_id)
+    .first()
+  )

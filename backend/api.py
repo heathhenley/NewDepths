@@ -16,7 +16,7 @@ from fastapi import (
   FastAPI, Form, Depends, HTTPException, status,
   templating, staticfiles, Request, Response
 )
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -445,6 +445,7 @@ def account(request: Request, db: Session = Depends(get_db)):
   except (HTTPException, KeyError, AttributeError):
     # redirect to home if not logged in
     return RedirectResponse("/")
+  print(user.data_orders)
   return templates.TemplateResponse(
     "account.html", {"request": request, "current_user": user})
   
@@ -503,6 +504,10 @@ def order(
     bbox_id: int,
     data_type: str = "csb",
     db: Session = Depends(get_db)):
+  
+  if not request.headers.get("hx-request"):
+    return RedirectResponse("/account")
+
   try:
     token = request.cookies.get("token")
     user = get_user(token, db)
@@ -531,17 +536,68 @@ def order(
 
   try:  
     resp = send_order_to_noaa(bbox, data_type, user)
-    pass
   except Exception as e:
     print(e)
     raise HTTPException(
       status_code=500,
       detail="Error sending order to NOAA"
     )
+
+  data_order = schemas.DataOrderCreate(
+    noaa_ref_id=resp["url"].split("/")[-1],
+    order_date=datetime.now(timezone.utc).isoformat(),
+    check_status_url=resp["url"],
+    bbox_id=bbox_id,
+    user_id=user.id,
+    data_type=data_type
+  )
+  crud.create_data_order(db, user.id, data_order)
+  
+  try:
+    order_status = requests.get(resp["url"]).json()["status"]
+  except Exception as e:
+    print(e)
+    order_status = "unknown" 
+
   return templates.TemplateResponse(
-    "order.html", {
+    "partials/order_table.html", {
       "request": request,
       "current_user": user,
       "status_url": resp["url"],
-      "message": resp["message"]
+      "message": resp["message"],
     })
+
+
+@app.get("/order_status/{order_id}", include_in_schema=False)
+def order_status(
+    request: Request,
+    order_id: int,
+    db: Session = Depends(get_db)) -> str:
+  
+  if not request.headers.get("hx-request"):
+    return RedirectResponse("/account")
+  
+  try:
+    token = request.cookies.get("token")
+    user = get_user(token, db)
+  except (HTTPException, KeyError, AttributeError):
+    # redirect to home if not logged in
+    return RedirectResponse("/login")
+  
+  if not (order := crud.get_data_order_by_id(db, order_id)):
+    raise HTTPException(
+      status_code=404,
+      detail="Order not found"
+    )
+  
+  if order.user_id != user.id:
+    raise HTTPException(
+      status_code=403,
+      detail="You do not have permission to view this order"
+    )
+  try:
+    order_status = requests.get(order.check_status_url).json()["status"]
+  except Exception as e:
+    print(e)
+    order_status = "unknown"
+  return HTMLResponse(order_status)
