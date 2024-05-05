@@ -38,6 +38,7 @@
             hx-get="/order_status/{{ order.id }}"
             hx-swap="innerHTML"
             hx-target="#order-status-{{ order.id}}"
+            data-loading-target="#loading-indicator"
             class="font-medium text-blue-600 hover:underline hover:cursor-pointer"
             alt="Check order status - hits the NOAA API to get the status of the order."
           >

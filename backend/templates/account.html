@@ -1,11 +1,22 @@
-{% extends "shared/_layout.html" %}
-{% block main_content %}
-  <section id="container" class="w-full md:w-3/4 h-full flex flex-col items-center py-4">
-    {% include "partials/bbox_table.html" %}
-  </section>
-    <section id="order_table_container" class="w-full md:w-3/4 h-full flex flex-col items-center py-4">
-      {% if current_user.data_orders %}
-        {% include "partials/order_table.html" %}
-      {% endif %}
-    </section>
+{% extends "shared/_layout.html" %} {% block main_content %}
+<section
+  id="container"
+  class="w-full md:w-3/4 h-full flex flex-col items-center py-4"
+>
+  {% include "partials/bbox_table.html" %}
+</section>
+<section
+  id="order_table_container"
+  class="w-full md:w-3/4 h-full flex flex-col items-center py-4"
+>
+  {% if current_user.data_orders %} {% include "partials/order_table.html" %} {%
+  endif %}
+  <img
+    src="/static/spinning-circles.svg"
+    alt="Loading"
+    class="data-loading"
+    id="loading-indicator"
+    data-loading
+  />
+</section>
 {% endblock %}
