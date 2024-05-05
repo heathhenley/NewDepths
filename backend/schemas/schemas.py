@@ -3,7 +3,6 @@ from pydantic import BaseModel, EmailStr
 
 
 class UserBase(BaseModel):
-  username: str
   email: EmailStr
   full_name: str | None = None
   active: bool = True
@@ -11,11 +10,13 @@ class UserBase(BaseModel):
   class Config:
     from_attributes = True
 
+
 class UserCreate(UserBase):
   hashed_password: str
 
   class Config:
     from_attributes = True
+
 
 class UserFromForm(UserBase):
   password: str
@@ -23,6 +24,7 @@ class UserFromForm(UserBase):
 
   class Config:
     from_attributes = True
+
 
 class BoundingBox(BaseModel):
   top_left_lat: float
@@ -32,6 +34,7 @@ class BoundingBox(BaseModel):
 
   class Config:
     from_attributes = True
+
 
 class User(UserBase):
   bboxes: list[BoundingBox] = []
@@ -44,8 +47,10 @@ class Token(BaseModel):
   access_token: str
   token_type: str
 
+
 class TokenData(BaseModel):
-  username: str | None = None
+  email: EmailStr | None = None
+
 
 class DataTypes(BaseModel):
   name: str

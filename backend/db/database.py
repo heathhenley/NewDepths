@@ -13,5 +13,3 @@ SQLALCHEMY_DATABASE_URL = os.getenv(
 engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_recycle=3600)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
-# create all tables
-Base.metadata.create_all(bind=engine)

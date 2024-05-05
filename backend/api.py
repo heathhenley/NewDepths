@@ -91,11 +91,11 @@ def get_user(
   )
   try:
     payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    username: str = payload.get("sub")
-    if username is None:
+    email: str = payload.get("sub")
+    if email is None:
       raise credentials_exception
-    token_data = schemas.TokenData(username=username)
-    if not (user := crud.get_user_by_username(db, token_data.username)):
+    token_data = schemas.TokenData(email=email)
+    if not (user := crud.get_user_by_email(db, token_data.email)):
       raise credentials_exception
   except JWTError:
     raise credentials_exception
@@ -110,8 +110,8 @@ def hash_password(password):
   return pwd_context.hash(password)
 
 
-def authenticate_user(db: Session, username: str, password: str):
-  user = crud.get_user_by_username(db, username)
+def authenticate_user(db: Session, email: str, password: str):
+  user = crud.get_user_by_email(db, email)
   if not user:
     return False
   if not verify_password(password, user.hashed_password):
@@ -144,11 +144,10 @@ def create_user(
 
   Returns a 201 if successful, 400 if there was an error.
   """
-  if (crud.get_user_by_email(db, user.email)
-      or crud.get_user_by_username(db, user.username)):
+  if crud.get_user_by_email(db, user.email):
     raise HTTPException(
       status_code=400,
-      detail="Email or username already registered"
+      detail="Email already registered"
     )
   if user.password != user.password_confirm:
     raise HTTPException(
@@ -157,7 +156,6 @@ def create_user(
     )
   user_create = schemas.UserCreate(
     hashed_password=hash_password(user.password),
-    username=user.username,
     email=user.email,
     full_name=user.full_name
   )
@@ -171,7 +169,7 @@ def login_for_access_token(
    form_data: OAuth2PasswordRequestForm = Depends(),
    db: Session = Depends(get_db)):
   # try to get the user from the database
-  user = authenticate_user(db, form_data.username, form_data.password)
+  user = authenticate_user(db, form_data.email, form_data.password)
   if not user:
     raise HTTPException(
       status_code=400,
@@ -180,7 +178,7 @@ def login_for_access_token(
   # create a jwt token and return it
   access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
   access_token = create_access_token(
-    data={"sub": user.username},
+    data={"sub": user.email},
     expires_delta=access_token_expires
   )
   return schemas.Token(access_token=access_token, token_type="bearer")
@@ -327,11 +325,11 @@ def login(request: Request):
 @limiter.limit("10/minute")
 def login(
     request: Request,
-    username: Annotated[str, Form()],
+    email: Annotated[str, Form()],
     password: Annotated[str, Form()],
     db: Session = Depends(get_db)):
 
-  user = authenticate_user(db, username, password)
+  user = authenticate_user(db, email, password)
 
   if not user:
     return templates.TemplateResponse(
@@ -339,7 +337,7 @@ def login(
 
   access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
   access_token = create_access_token(
-    data={"sub": user.username},
+    data={"sub": user.email},
     expires_delta=access_token_expires
   )
 
@@ -363,6 +361,7 @@ def logout(request: Request):
 
 
 @app.get("/register", include_in_schema=False)
+@limiter.limit("10/minute")
 def register(request: Request):
   if request.headers.get("hx-request"):
     return templates.TemplateResponse(
@@ -375,13 +374,12 @@ def register(request: Request):
 @limiter.limit("10/minute")
 def register(
     request: Request,
-    username: Annotated[str, Form()],
     email: Annotated[str, Form()],
     password: Annotated[str, Form()],
     password_confirm: Annotated[str, Form()],
     db: Session = Depends(get_db)):
 
-  if not username or not email or not password or not password_confirm:
+  if not email or not password or not password_confirm:
     return templates.TemplateResponse(
       "index.html", {
         "request": request,
@@ -415,16 +413,15 @@ def register(
 
   user_create = schemas.UserCreate(
     hashed_password=hash_password(password),
-    username=username,
     email=email,
   )
   crud.create_user(db, user_create)
 
   # log user in automatically after registering
-  user = authenticate_user(db, username, password)
+  user = authenticate_user(db, email, password)
   access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
   access_token = create_access_token(
-    data={"sub": user.username},
+    data={"sub": user.email},
     expires_delta=access_token_expires
   )
   request = templates.TemplateResponse(
