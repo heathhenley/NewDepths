@@ -487,12 +487,15 @@ def send_order_to_noaa(
     json={
       "bbox": bbox_to_flat(bbox), 
       "email": user.email,
-      "datasets": {
-        "type": data_type
-      }
+      "datasets": [
+        {
+          "type": data_type
+        },
+      ]
     }
   )
   if not resp.ok:
+    print(resp.json())
     raise Exception("Error sending order to NOAA")
   return resp.json()
 
