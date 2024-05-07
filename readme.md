@@ -6,6 +6,12 @@ in a user defined area. The app queries the MBES, CSB, and NOS data from NOAA
 (at the time, maybe more will be added). You can log in, define a bounding box, 
 and then receive a daily email with a summary of the new data in that area.
 
+In addtion to getting a daily email when there is new data in your bounding boxes,
+you can now request the MBES or CSB data in CSV format from NOAA's point store
+API right from your account page. There are more options to customize this that may
+be added in the future, if you need them now consider using their
+[api](https://github.com/CI-CMG/pointstore-api-docs/blob/main/pointstore_api.md) directly.
+
 It's live at [newdepths.xyz](https://newdepths.xyz).
 
 There is also an [api](https://newdepths.xyz/docs) so that everything could be implemented in a different, probably better
