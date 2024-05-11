@@ -1,98 +1,78 @@
-<script>
-  window.onload = () => {
-    const modalEl = document.getElementById("default-modal");
-    console.log(modalEl);
-    const modal = new window.Flowbite.default.Modal(modalEl);
-    modal.show();
-  };
-</script>
-<div
-  id="default-modal"
-  tabindex="-1"
-  aria-hidden="true"
-  class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full z-50"
->
-  <div class="relative p-4 w-full max-w-2xl max-h-full">
-    <div class="relative bg-white rounded-lg shadow" id="form">
-        <!-- Modal header -->
-        <div
-          class="flex items-center justify-between p-4 md:p-5 border-b rounded-t"
+<div class="relative bg-white rounded-lg shadow" id="form">
+  <!-- Modal header -->
+  <div class="flex items-center justify-between p-4 md:p-5 border-b rounded-t">
+    <h2 class="text-3xl">What is this?</h2>
+  </div>
+  <div class="flex flex-col p-4 gap-4 w-full sm:w-3/4">
+    <p>
+      This is a simple app to send you email notifications when new
+      <a
+        class="underline"
+        href="https://noaa.maps.arcgis.com/home/item.html?id=db08517a205b48c98a9bc53fece67a46"
+        target="_blank"
+        >MBES</a
+      >,
+      <a
+        class="underline"
+        href="https://www.ngdc.noaa.gov/iho/#csb"
+        target="_blank"
+        >CSB</a
+      >, or
+      <a
+        class="underline"
+        href="https://noaa.maps.arcgis.com/home/item.html?id=f8ca92b0f19a4de3887bdc160f73106e"
+        target="_blank"
+        >NOS surveys (w/ digital data)</a
+      >
+      data become available at NOAA's endpoints. Select up to 5 bounding boxes
+      and get notified when new data becomes available in those areas everyday.
+    </p>
+    <p>
+      NEW! You can also request the actual MBES or CSB from NOAA's
+      <a
+        href="https://github.com/CI-CMG/pointstore-api-docs/blob/main/pointstore_api.md"
+        target="_blank"
+        class="underline"
+        >point store API
+      </a>
+      for your bounding boxes from your account page, and the data will be sent
+      to your email (defaults to a csv).
+    </p>
+    <p>
+      Please
+      <a
+        href="https://github.com/heathhenley/NewDepths/issues/new"
+        class="underline"
+        target="_blank"
+        >reach out</a
+      >
+      with any questions, issues, or suggestions!
+    </p>
+    <div>
+      <p class="text-2xl">Log in or register to start!</p>
+      <p>
+        Please log in to make a bounding box and get notified when new data
+        becomes available
+      </p>
+      <span>
+        <a
+          hx-swap="outerHTML"
+          hx-get="/login"
+          hx-target="#form"
+          class="text-blue-500 underline hover:text-blue-700 hover:cursor-pointer"
         >
-          <h2 class="text-3xl">What is this?</h2>
-        </div>
-        <div class="flex flex-col p-4 gap-4 w-full sm:w-3/4">
-          <p>
-            This is a simple app to send you email notifications when new
-            <a
-              class="underline"
-              href="https://noaa.maps.arcgis.com/home/item.html?id=db08517a205b48c98a9bc53fece67a46"
-              target="_blank"
-              >MBES</a
-            >,
-            <a
-              class="underline"
-              href="https://www.ngdc.noaa.gov/iho/#csb"
-              target="_blank"
-              >CSB</a
-            >, or
-            <a
-              class="underline"
-              href="https://noaa.maps.arcgis.com/home/item.html?id=f8ca92b0f19a4de3887bdc160f73106e"
-              target="_blank"
-              >NOS surveys (w/ digital data)</a
-            >
-            data become available at NOAA's endpoints. Select up to 5 bounding
-            boxes and get notified when new data becomes available in those
-            areas everyday.
-          </p>
-          <p>
-            NEW! You can also request the actual MBES or CSB from NOAA's
-            <a
-              href="https://github.com/CI-CMG/pointstore-api-docs/blob/main/pointstore_api.md"
-              target="_blank"
-              class="underline"
-              >point store API
-            </a>
-            for your bounding boxes from your account page, and the data will be
-            sent to your email (defaults to a csv).
-          </p>
-          <p>
-            Please
-            <a
-              href="https://github.com/heathhenley/NewDepths/issues/new"
-              class="underline"
-              target="_blank"
-              >reach out</a
-            >
-            with any questions, issues, or suggestions!
-          </p>
-          <div>
-            <p class="text-2xl">Log in or register to start!</p>
-            <p>
-              Please log in to make a bounding box and get notified when new
-              data becomes available
-            </p>
-            <span>
-              <a
-                hx-swap="outerHTML"
-                hx-get="/login"
-                hx-target="#form"
-                class="text-blue-500 underline hover:text-blue-700 hover:cursor-pointer"
-              >
-                Login</a
-              >
-              or
-              <a
-                hx-swap="outerHTML"
-                hx-get="/register"
-                hx-target="#form"
-                class="text-blue-500 underline hover:text-blue-700 hover:cursor-pointer"
-              >
-                Register</a
-              >
-            </span>
-          </div>
-        </div>
+          Login</a
+        >
+        or
+        <a
+          hx-swap="outerHTML"
+          hx-get="/register"
+          hx-target="#form"
+          class="text-blue-500 underline hover:text-blue-700 hover:cursor-pointer"
+        >
+          Register</a
+        >
+      </span>
     </div>
   </div>
 </div>
