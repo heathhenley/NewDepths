@@ -14,7 +14,8 @@
     <meta property="twitter:site" content="@Heath_Henley" />
     <meta property="twitter:title" content="NewDepths.xyz" />
     <meta property="twitter:url" content="https://newdepths.xyz" />
-    <meta property="twitter:description"
+    <meta
+      property="twitter:description"
       content="Get email notifications when new Multibeam Echosounder, Crowd-sourced Bathymetry, or NOS surveys with digital data become available from NOAAs endpoints. Request MBES or CSB data for a bounding box from NOAAs point store API."
     />
     <meta property="twitter:image" content="/static/social.png" />
@@ -48,36 +49,39 @@
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
 
-  <body hx-ext="loading-states" class="w-100 h-100 flex flex-col">
-    <header class="md:px-12 p-4 border-b-2 flex justify-between items-center">
-      <div>
-        <h1 class="text-3xl"><a href="/">NewDepths.xyz</a></h1>
-        <p class="text-sm">
-          Get notifications and request data from NOAA's point store API for chosen bounding boxes.
-        </p>
-      </div>
-      <div>
-        {% if current_user %}
-        <a href="/account" class="underline">Account</a> |
-        <a href="/logout" class="underline">Logout</a>
-        {% else %}
-        <a href="/login" class="underline">Login</a>
-        {% endif %}
-      </div>
-    </header>
+  <body hx-ext="loading-states">
+    <div class="flex flex-col h-full">
+      <header class="md:px-12 p-4 border-b-2 flex justify-between items-center">
+        <div>
+          <h1 class="text-3xl"><a href="/">NewDepths.xyz</a></h1>
+          <p class="text-sm">
+            Get notifications and request data from NOAA's point store API for
+            chosen bounding boxes.
+          </p>
+        </div>
+        <div>
+          {% if current_user %}
+          <a href="/account" class="underline">Account</a> |
+          <a href="/logout" class="underline">Logout</a>
+          {% else %}
+          <a href="/login" class="underline">Login</a>
+          {% endif %}
+        </div>
+      </header>
 
-    <main class="h-full w-full flex flex-col items-center p-2">
-      {% block main_content %}{% endblock %}
-    </main>
+      <main class="w-full h-full flex-1 overflow-auto flex flex-col items-center p-2 hide-scrollbar">
+        {% block main_content %}{% endblock %}
+      </main>
 
-    <footer class="flex justify-center p-2 text-xs">
-      <div>
-        Report an issue or contribute
-        <a class="underline" href="https://github.com/heathhenley/NewDepths"
-          ><i class="fa fa-brands fa-github"></i>
-        </a>
-      </div>
-    </footer>
+      <footer class="flex justify-center p-2 text-xs">
+        <div>
+          Report an issue or contribute
+          <a class="underline" href="https://github.com/heathhenley/NewDepths"
+            ><i class="fa fa-brands fa-github"></i>
+          </a>
+        </div>
+      </footer>
+    </div>
     <script src="/static/htmx.min.js"></script>
     <script src="https://unpkg.com/htmx.org/dist/ext/loading-states.js"></script>
     {% block additional_js %}{% endblock %}
