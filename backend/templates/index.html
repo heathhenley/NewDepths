@@ -5,14 +5,14 @@
 </section>
 <section class = "flex flex-col items-center w-full">
   <!-- Modal -->
-  {% if not current_user %}
     <div
       id="default-modal"
       tabindex="-1"
       aria-hidden="true"
       class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full z-50"
     >
-      <div class="relative p-4 w-full max-w-2xl max-h-full">
+      <div class="relative p-4 w-full max-w-2xl max-h-full flex flex-col items-center">
+        {% if not current_user %}
           {% if register %}
             {% include "partials/register.html" %}
           {% elif login %}
@@ -20,16 +20,19 @@
           {% else %}
             {% include "partials/not_logged_in.html" %}
           {% endif %}
+        {% else %}
+          {% include "partials/save_bbox.html" %}
+        {% endif %}
       </div>
     </div>
-  {% endif %}
-  <script>
-    window.onload = () => {
-      const modalEl = document.getElementById("default-modal");
-      console.log(modalEl);
-      const modal = new window.Flowbite.default.Modal(modalEl);
-      modal.show();
-    };
-  </script>
+    {% if not current_user %}
+      <script>
+        window.onload = () => {
+          const modalEl = document.getElementById("default-modal");
+          const modal = new window.Flowbite.default.Modal(modalEl);
+          modal.show();
+        };
+      </script>
+    {% endif %}
 </section>
 {% endblock %}

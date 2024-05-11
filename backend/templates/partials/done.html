@@ -1,19 +1,32 @@
-<div id="form" class="w-full md:w-3/4 flex flex-col items-center">
-  <h2 class="text-2xl">Success!</h2>
-  <p>
-    Bounding box added, you will now get notified when new MBES or CSB data
-    becomes available within the area.
-  </p>
-  <p>
-    Add another bounding box
-      <a 
-      class="text-blue-500 hover:cursor-pointer underline hover:text-blue-700"
-       hx-get="/bbox_form" hx-swap="outerHTML" hx-target="#form">here</a>.
-  </p>
-  <p>
-    Or see a list of your bounding boxes at the
-      <a 
-      class="text-blue-500 hover:cursor-pointer underline hover:text-blue-700"
-      href="/account">account</a> page.
-  </p>
+<div id="form" class="w-full bg-white md:w-3/4 flex flex-col items-center p-6">
+  <div class="w-full rounded-lg shadow md:mt-0 sm:max-w-md xl:p-0">
+    <h1
+      class="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl"
+    >
+      Success!
+    </h1>
+    <p>
+      Bounding box added, you will now get notified when new MBES or CSB data
+      becomes available within the area.
+    </p>
+    <p>
+      Add another bounding box
+      <a
+        class="text-blue-500 hover:cursor-pointer underline hover:text-blue-700"
+        hx-get="/bbox_form"
+        hx-swap="outerHTML"
+        hx-target="#form"
+        >here</a
+      >.
+    </p>
+    <p>
+      Or see a list of your bounding boxes at the
+      <a
+        class="text-blue-500 hover:cursor-pointer underline hover:text-blue-700"
+        href="/account"
+        >account</a
+      >
+      page.
+    </p>
+  </div>
 </div>

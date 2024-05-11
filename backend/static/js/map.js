@@ -8,6 +8,14 @@ const layer = L.tileLayer(
 );
 layer.addTo(map);
 
+function clearBoundingBox() {
+  map.eachLayer(function (layer) {
+    if (layer instanceof L.Polygon) {
+      map.removeLayer(layer);
+    }
+  });
+};
+
 // toggle zoom/pan versus selection mode:
 const toggleButton = document.getElementById("toggle-button");
 if (toggleButton) {
@@ -79,6 +87,13 @@ map.on("mouseup", function (e) {
   currentBbox.end_lat = e.latlng.lat;
   currentBbox.end_lon = e.latlng.lng;
 
+  // show the modal
+  const modalEl = document.getElementById("default-modal");
+  const modal = new window.Flowbite.default.Modal(modalEl);
+  modal.show();
+  modal.updateOnHide(() => {
+    clearBoundingBox();
+  });
 
   // get leftmost lon and topmost lat
   const top_left_lon = Math.min(currentBbox.start_lon, currentBbox.end_lon);
