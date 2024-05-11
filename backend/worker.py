@@ -101,7 +101,7 @@ def check_for_new_data(
 
 
 def main():
-  logging.basicConfig(level=logging.DEBUG)
+  logging.basicConfig(level=logging.INFO)
 
   db = next(get_db())
 

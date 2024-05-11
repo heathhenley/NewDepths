@@ -59,3 +59,4 @@ class DataOrder(Base):
   user = relationship("User", back_populates="data_orders")
   user_id = Column(Integer, ForeignKey("users.id"))
   last_status = Column(String, nullable=True)
+  output_location = Column(String, nullable=True)

@@ -67,6 +67,8 @@ class DataOrderCreate(BaseModel):
   check_status_url: str | None = None
   bbox_id: int
   data_type: str
+  last_status: str | None = None
+  output_location: str | None = None
 
   class Config:
     from_attributes = True

@@ -567,6 +567,23 @@ def order(
     })
 
 
+def bucket_to_url(bucket_location: str):
+  base = "https://order-pickup.s3.amazonaws.com" 
+  uuid = bucket_location.split("/")[-1]
+  return f"{base}/{uuid}"
+
+
+def prettier_status(status: str, url: str):
+  if status == "complete":
+    link = f"<a class='underline' href='{url}'>Download</a>" if url else ""
+    return f"Complete! {link}"
+  if status == "created":
+    return "Created"
+  if status == "initialized":
+    return "Initialized"
+  return "Order status unknown"
+
+
 @app.get("/order_status/{order_id}", include_in_schema=False)
 def order_status(
     request: Request,
@@ -595,23 +612,26 @@ def order_status(
       detail="You do not have permission to view this order"
     )
   
-  if order.last_status != "complete":
+  if "complete" not in order.last_status.lower():
     # this is just to be nice and not hammer the NOAA api if we know the order
     # is complete
     try:
-      order.last_status = requests.get(order.check_status_url).json()["status"]
+      res = requests.get(order.check_status_url).json()
+      loc = res.get("output_location", None)
+      order.output_location = bucket_to_url(loc) if loc else None
+      order.last_status = prettier_status(res["status"], order.output_location)
     except Exception as e:
       print(e)
-      order.last_status = "unknown"
-    order.last_status = order_status
+      order.last_status = prettier_status("unknown", None)
     db.commit()
 
   # assuming we want to stop by default - so far I have only seen complete and
   # and initialized statuses, created is mine
   # so this only keeps going in the cases where I've seen that it should so far
   http_status = 286 # 286 is a custom htmx status code to stop polling
-  if order.last_status == "created" or order.last_status == "initialized":
+  if any([x in order.last_status.lower() for x in ["created", "initialized"]]):
     http_status = 200  # tells htmx to continue polling
+  
   return HTMLResponse(
     order.last_status,
     status_code=http_status

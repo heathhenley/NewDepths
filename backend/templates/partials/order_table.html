@@ -34,7 +34,7 @@
             hx-swap="innerHTML"
             hx-target="#order-status-{{ order.id}}"
             hx-trigger="every 5s"
-        > {{ order.last_status }}</td>
+        > {{ order.last_status | safe }}</td>
         <td class="px-6 py-4">{{ order.data_type }}</td>
       </tr>
       {% endfor %}
