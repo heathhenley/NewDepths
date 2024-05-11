@@ -594,12 +594,25 @@ def order_status(
       status_code=403,
       detail="You do not have permission to view this order"
     )
-  try:
-    order_status = requests.get(order.check_status_url).json()["status"]
-  except Exception as e:
-    print(e)
-    order_status = "unknown"
   
-  order.last_status = order_status
-  db.commit()
-  return HTMLResponse(order_status)
+  if order.last_status != "complete":
+    # this is just to be nice and not hammer the NOAA api if we know the order
+    # is complete
+    try:
+      order.last_status = requests.get(order.check_status_url).json()["status"]
+    except Exception as e:
+      print(e)
+      order.last_status = "unknown"
+    order.last_status = order_status
+    db.commit()
+
+  # assuming we want to stop by default - so far I have only seen complete and
+  # and initialized statuses, created is mine
+  # so this only keeps going in the cases where I've seen that it should so far
+  http_status = 286 # 286 is a custom htmx status code to stop polling
+  if order.last_status == "created" or order.last_status == "initialized":
+    http_status = 200  # tells htmx to continue polling
+  return HTMLResponse(
+    order.last_status,
+    status_code=http_status
+  )

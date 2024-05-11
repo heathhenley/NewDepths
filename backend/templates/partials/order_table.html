@@ -13,10 +13,7 @@
         <th scope="col" class="px-6 py-3">ID</th>
         <th scope="col" class="px-6 py-3">BBOX</th>
         <th scope="col" class="px-6 py-3">Status</th>
-        <th scope="col" class="px-6 py-3">Data Type</th>
-        <th scope="col" class="px-6 py-3">
-          <span class="sr-only">Check Status</span>
-        </th>
+        <th scope="col" class="px-6 py-3">Data Type</th> 
       </tr>
     </thead>
     <tbody>
@@ -31,21 +28,14 @@
         <td class="px-6 py-4">
           {{ order.bbox_id }}
         </td>
-        <td id="order-status-{{ order.id}}" class="px-6 py-4"> {{ order.last_status }}</td>
-        <td class="px-6 py-4">{{ order.data_type }}</td>
-        <td class="px-6 py-4 text-right">
-          <a
+        <td id="order-status-{{ order.id}}"
+            class="px-6 py-4"
             hx-get="/order_status/{{ order.id }}"
             hx-swap="innerHTML"
             hx-target="#order-status-{{ order.id}}"
-            data-loading-target="#loading-indicator"
-            class="font-medium text-blue-600 hover:underline hover:cursor-pointer"
-            alt="Check order status - hits the NOAA API to get the status of the order."
-          >
-            Check status
-          </a>
-
-        </td>
+            hx-trigger="every 5s"
+        > {{ order.last_status }}</td>
+        <td class="px-6 py-4">{{ order.data_type }}</td>
       </tr>
       {% endfor %}
     </tbody>
