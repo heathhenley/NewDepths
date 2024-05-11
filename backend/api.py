@@ -1,10 +1,17 @@
-""" NewDepths.xyz Bathymetry Data Notification API
+""" NewDepths.xyz Bathymetry Data Notification API/Server
 
-An api to subscribe to notifications for new data within a user
-defined bounding box. At the moment, supports MBES  and CSB data from NOAA.
+An api and simple frontend to subscribe to notifications for new data within a
+user defined bounding box. At the moment, supports MBES, NOS, and CSB data from
+NOAA.
 
 A worker runs through the database of bounding boxes, checks for new data,
-and emails the user about the new data if there is any.
+and emails the user about the new data if there is any. The user can also order
+new data from the new NOAA point store api.
+
+Written like this to get a chance to play with HTMX, roll my own auth, and take
+a break from the js/ts frameworks-of-the-day. Though it's still going to have
+a little bit of js because of all the interactiion with the map, would be good
+to add some toasts, etc.
 """
 from datetime import timedelta, datetime, timezone
 import os
