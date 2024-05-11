@@ -332,15 +332,15 @@ def login(
   user = authenticate_user(db, email, password)
 
   if not user:
-    return templates.TemplateResponse(
-      "index.html", {"request": request, "login": "true"})
+    return templates.TemplateResponse("index.html",
+      {"request": request,
+       "login": "true",
+       "error": "Invalid credentials"})
 
-  access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
   access_token = create_access_token(
     data={"sub": user.email},
-    expires_delta=access_token_expires
+    expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
   )
-
   response = templates.TemplateResponse(
       "index.html", {"request": request, "current_user": user})
   response.set_cookie(
