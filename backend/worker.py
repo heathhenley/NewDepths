@@ -32,7 +32,6 @@ def make_email_body(notifications: SurveyDataList):
     data_type = notification.description
     json_url = notification.json_url
     new_surveys = notification.data
-    order_url = get_order_url(bbox.id, data_type)
 
     body += f"<h2> New '{data_type}' data for bbox</h2>"
     body += (
