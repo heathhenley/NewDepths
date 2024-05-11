@@ -88,8 +88,7 @@ def check_for_new_data(
 
       # filter out any surveys that are older than the last cached date
       if date is not None:
-        surveys = [s for s in results.data if s.time > date]
-        results.data = surveys
+        results.data = [s for s in results.data if s.time > date]
 
       # upsert in the database
       crud.set_last_cached_date(db, bbox, data_type, latest_datetime)
@@ -120,6 +119,10 @@ def main():
   # all the new stuff they're interested in, then we can send just one
   # notification / email to each user
   notifications_by_user = check_for_new_data(db, bboxes, data_types)
+
+  logging.info(f"Notifications by user: {len(notifications_by_user.keys())}")
+  for user_id, notifications in notifications_by_user.items():
+    logging.info(f"  User {user_id} has {len(notifications)} notifications.")
 
   # send the notifications
   for user_id, notifications in notifications_by_user.items():
