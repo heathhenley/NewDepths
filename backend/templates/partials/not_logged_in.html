@@ -1,75 +1,68 @@
-<div class="flex flex-col p-4 gap-4 w-full sm:w-3/4" id="form">
-  <div>
-    <h2 class="text-3xl">What is this?</h2>
-    <p>
-      This is a simple app to send you email notifications when new
-      <a
-        class="underline"
-        href="https://noaa.maps.arcgis.com/home/item.html?id=db08517a205b48c98a9bc53fece67a46"
-        target="_blank"
-        >MBES</a
-      >,
-      <a
-        class="underline"
-        href="https://www.ngdc.noaa.gov/iho/#csb"
-        target="_blank"
-        >CSB</a
-      >, or
-      <a
-        class="underline"
-        href="https://noaa.maps.arcgis.com/home/item.html?id=f8ca92b0f19a4de3887bdc160f73106e"
-        target="_blank"
-        >NOS surveys (w/ digital data)</a
-      >
-      data become available at NOAA's endpoints. Select up to 5 bounding boxes
-      and get notified when new data becomes available in those areas everyday.
-    </p>
-    <p>
-      NEW! You can also request the actual MBES or CSB from NOAA's
-      <a
-        href="https://github.com/CI-CMG/pointstore-api-docs/blob/main/pointstore_api.md"
-        target="_blank"
-        class="underline"
-        >point store API
-      </a>
-      for your bounding boxes from your account page, and the data will be sent
-      to your email (defaults to a csv).
-    </p>
-    <p>
-      Please
-      <a
-        href="https://github.com/heathhenley/NewDepths/issues/new"
-        class="underline"
-        target="_blank"
-        >reach out</a
-      >
-      with any questions, issues, or suggestions!
-    </p>
-  </div>
-  <div>
-    <p class="text-2xl">Log in or register to start!</p>
-    <p>
-      Please log in to make a bounding box and get notified when new data
-      becomes available
-    </p>
-    <span>
-      <a
-        hx-swap="outerHTML"
-        hx-get="/login"
-        hx-target="#form"
-        class="text-blue-500 underline hover:text-blue-700 hover:cursor-pointer"
-      >
-        Login</a
-      >
-      or
-      <a
-        hx-swap="outerHTML"
-        hx-get="/register"
-        hx-target="#form"
-        class="text-blue-500 underline hover:text-blue-700 hover:cursor-pointer"
-      >
-        Register</a
-      >
-    </span>
+<div class="flex flex-col gap-4 w-3/4" id="form">
+  <div class="container mx-auto py-5">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <!-- Feature Box 1 -->
+      <div class="border border-gray-300 p-4 rounded-lg">
+        <h2 class="font-bold text-2xl mb-3">What is this?</h2>
+        <p class="text-gray-700">
+          Receive email notifications when new
+          <a
+            class="underline"
+            href="https://noaa.maps.arcgis.com/home/item.html?id=db08517a205b48c98a9bc53fece67a46"
+            target="_blank"
+            >MBES</a
+          >,
+          <a
+            class="underline"
+            href="https://www.ngdc.noaa.gov/iho/#csb"
+            target="_blank"
+            >CSB</a
+          >, or
+          <a
+            class="underline"
+            href="https://noaa.maps.arcgis.com/home/item.html?id=f8ca92b0f19a4de3887bdc160f73106e"
+            target="_blank"
+            >NOS surveys (w/ digital data)</a
+          >
+          data become available at NOAA's endpoints. You can also request the
+          actual MBES or CSB from NOAA's
+          <a
+            href="https://github.com/CI-CMG/pointstore-api-docs/blob/main/pointstore_api.md"
+            target="_blank"
+            class="underline"
+            >point store API
+          </a>
+          for your bounding boxes from your account page.
+        </p>
+      </div>
+      <!-- Feature Box 2 -->
+      <div class="border border-gray-300 p-4 rounded-lg">
+        <h2 class="font-bold text-2xl mb-3">How does it work?</h2>
+        <ol class="text-gray-700 list-decimal px-4">
+          <li>
+            <a
+              hx-swap="outerHTML"
+              hx-get="/login"
+              hx-target="#form"
+              class="text-blue-500 underline hover:text-blue-700 hover:cursor-pointer"
+            >
+              Login</a
+            >
+            or
+            <a
+              hx-swap="outerHTML"
+              hx-get="/register"
+              hx-target="#form"
+              class="text-blue-500 underline hover:text-blue-700 hover:cursor-pointer"
+            >
+              Register</a
+            >
+          </li>
+          <li>Create a bounding box</li>
+          <li>Get daily email summary (only when there's new data)</li>
+          <li>Optionally request data in the box from NOAA</li>
+        </ol>
+      </div>
+    </div>
   </div>
 </div>
