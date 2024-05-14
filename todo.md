@@ -5,6 +5,7 @@ Backend
     attributes (ARRIVAL_DATE, etc), and slightly different return attributes
     (PLATFORM, DOWNLOAD_URL, etc) - so they just need to be parameterized a bit
 - dry out checking for hx-request / cache headers stuff
+- use the same bbox validation as noaa endpoints (why not?) - https://github.com/CI-CMG/bathy-app/blob/main/create_order/app.py#L25
 - set up db backups
 - set up db migrations (alembic?)
 - should bboxes have names / descriptions?
