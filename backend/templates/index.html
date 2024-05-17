@@ -1,19 +1,32 @@
 {% extends "shared/_layout.html" %}
 {% block main_content %}
-<section id="container" class="w-full min-h-64 md:w-3/4 h-1/2 flex flex-col items-center">
+<section id="container" class="w-full min-h-64 h-full flex flex-col items-center relative">
   {% include "partials/map.html" %}
 </section>
 <section class = "flex flex-col items-center w-full">
-  {% if current_user %}
-    {% include "partials/save_bbox.html" %}
-  {% else %}
-    {% if register %}
-      {% include "partials/register.html" %}
-    {% elif login %}
-      {% include "partials/login.html" %}
-    {% else %}
-      {% include "partials/not_logged_in.html" %}
-    {% endif %}
-  {% endif %}
+    <!-- Modal -->
+    <div
+      id="default-modal"
+      tabindex="-1"
+      aria-hidden="true"
+      class="hidden w-full overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 justify-center items-center md:inset-0 h-[calc(100%-1rem)] max-h-full z-50 "
+    >
+      <div class="relative p-4 max-w-2xl w-full sm:w-3/4 max-h-full flex flex-col items-center">
+        {% if not current_user %}
+          {% if register %}
+            {% include "partials/register.html" %}
+          {% elif login %}
+            {% include "partials/login.html" %}
+          {% else %}
+            {% include "partials/not_logged_in.html" %}
+          {% endif %}
+        {% else %}
+          {% include "partials/save_bbox.html" %}
+        {% endif %}
+        {% if not current_user %}
+          <script>window.showModalOnLoad("default-modal");</script>
+        {% endif %}
+      </div>
+    </div>
 </section>
 {% endblock %}

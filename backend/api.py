@@ -312,7 +312,8 @@ def bbox_form(
   # good to save bbox
   crud.create_user_bbox(db, bbox, db_user.id)
   return templates.TemplateResponse(
-    "partials/done.html", {"request": request})
+    "partials/save_bbox.html", {"request": request}
+  )
 
 
 @app.get("/login", include_in_schema=False)

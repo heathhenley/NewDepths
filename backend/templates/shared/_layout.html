@@ -47,6 +47,7 @@
     ></script>
     <link rel="stylesheet" href="/static/style.css" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/static/js/utils.js"></script>
   </head>
 
   <body hx-ext="loading-states">
@@ -69,7 +70,9 @@
         </div>
       </header>
 
-      <main class="w-full h-full flex-1 overflow-auto flex flex-col items-center p-2 hide-scrollbar">
+      <main
+        class="w-full h-full flex-1 overflow-auto flex flex-col items-center hide-scrollbar"
+      >
         {% block main_content %}{% endblock %}
       </main>
 
@@ -84,6 +87,7 @@
     </div>
     <script src="/static/htmx.min.js"></script>
     <script src="https://unpkg.com/htmx.org/dist/ext/loading-states.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
     {% block additional_js %}{% endblock %}
   </body>
 </html>

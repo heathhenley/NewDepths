@@ -31,8 +31,17 @@ const currentBbox = {
   end_lat: 0,
   end_lon: 0,
 };
-const boxes = new Array(); 
+const boxes = new Array();
 let draggingTheMouse = false;
+
+// clear poly
+function clearPolygon() {
+  map.eachLayer(function (layer) {
+    if (layer instanceof L.Polygon) {
+      map.removeLayer(layer);
+    }
+  });
+}
 
 // handle mouse events to draw a bounding box
 map.on("mousedown", function (e) {
@@ -48,6 +57,7 @@ map.on("mousemove", function (e) {
   if (map.dragging.enabled()) {
     return;
   }
+  // Fix so we can start at null island if we want
   if (currentBbox.start_lat === 0 && currentBbox.start_lon === 0) {
     return;
   }
@@ -55,11 +65,8 @@ map.on("mousemove", function (e) {
     return;
   }
 
-  map.eachLayer(function (layer) {
-    if (layer instanceof L.Polygon) {
-      map.removeLayer(layer);
-    }
-  });
+  clearPolygon();
+
   // ok we're dragging the mouse and we have a start point, draw the
   // rectangle that's being dragged
   const currentPolygon = L.polygon([
@@ -79,6 +86,26 @@ map.on("mouseup", function (e) {
   currentBbox.end_lat = e.latlng.lat;
   currentBbox.end_lon = e.latlng.lng;
 
+  // show the modal
+  const modal = document.getElementById("default-modal");
+  if (modal) {
+    const modalInstance = new window.Flowbite.default.Modal(modal);
+    modalInstance.show();
+    // add a handler to clear box on hide:
+    modalInstance.updateOnHide(() => {
+      try {
+        clearPolygon();
+      } catch (e) {
+        console.error(e);
+      }
+    });
+    const submit_button = document.getElementById("submit_bbox");
+    if (submit_button) {
+      submit_button.onclick = function () {
+        modalInstance.hide();
+      };
+    }
+  }
 
   // get leftmost lon and topmost lat
   const top_left_lon = Math.min(currentBbox.start_lon, currentBbox.end_lon);
@@ -107,7 +134,7 @@ map.on("mouseup", function (e) {
     [currentBbox.start_lat, currentBbox.end_lon],
     [currentBbox.end_lat, currentBbox.end_lon],
     [currentBbox.end_lat, currentBbox.start_lon],
-  ])
+  ]);
   currentPolygon.addTo(map);
   boxes.push(currentPolygon);
 });
