@@ -14,6 +14,7 @@ a little bit of js because of all the interactiion with the map, would be good
 to add some toasts, etc.
 """
 from datetime import timedelta, datetime, timezone
+import json
 import os
 import requests
 from typing import Annotated
@@ -466,12 +467,18 @@ def delete_bbox(
     return HTTPException(
       status_code=204,
     )
+  orders = crud.get_data_orders_by_bbox_id(db, bbox_id)
   if not crud.delete_user_bbox(db, bbox_id, user.id):
     return HTTPException(
       status_code=204,
       detail="Invalid permission, or invalid bbox id"
     )
-  return Response(status_code=200) 
+  resp = Response(status_code=200)
+  resp.headers["hx-trigger"] = json.dumps({
+    "showAlert": bbox_id,
+    "deletedOrders": [x.id for x in orders]
+  })
+  return resp 
 
 
 def bbox_to_flat(bbox: models.BoundingBox):
@@ -542,7 +549,7 @@ def order(
     )
 
   try:  
-    resp = send_order_to_noaa(bbox, data_type, user)
+    resp = send_order_to_noaa(bbox, data_type, user) 
   except Exception as e:
     print(e)
     raise HTTPException(

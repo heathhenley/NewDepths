@@ -67,7 +67,15 @@ def delete_user_bbox(db: Session, bbox_id: int, user_id: int):
     db.commit()
     return True
   return False
-  
+
+
+def get_data_orders_by_bbox_id(db: Session, bbox_id: int):
+  return (
+    db.query(models.DataOrder)
+      .filter(models.DataOrder.bbox_id == bbox_id)
+      .all()
+  )
+
 
 def get_all_bboxes(db: Session) -> list[models.BoundingBox]:
   return db.query(models.BoundingBox).all()
