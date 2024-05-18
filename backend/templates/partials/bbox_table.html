@@ -40,7 +40,7 @@
         <td class="px-6 py-4">
           Order
           <a
-            hx-get="/order/{{ bbox.id }}/multibeam"
+            hx-post="/order/{{ bbox.id }}/multibeam"
             hx-swap="innerHTML"
             hx-target="#order_table_container"
             data-loading-target="#loading-indicator"
@@ -51,7 +51,7 @@
           </a>
           or
           <a
-            hx-get="/order/{{ bbox.id }}/csb"
+            hx-post="/order/{{ bbox.id }}/csb"
             hx-swap="innerHTML"
             hx-target="#order_table_container"
             data-loading-target="#loading-indicator"

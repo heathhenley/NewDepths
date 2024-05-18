@@ -10,8 +10,7 @@ new data from the new NOAA point store api.
 
 Written like this to get a chance to play with HTMX, roll my own auth, and take
 a break from the js/ts frameworks-of-the-day. Though it's still going to have
-a little bit of js because of all the interactiion with the map, would be good
-to add some toasts, etc.
+a little bit of js because of all the interaction with the map.
 """
 from datetime import timedelta, datetime, timezone
 import json
@@ -199,6 +198,17 @@ def is_valid_bbox(
     bottom_right_lat: float,
     bottom_right_lon: float):
   """ Check if the bounding box is valid. """
+  # check physical limits
+  if any([x < -90 or x > 90 for x in [top_left_lat, bottom_right_lat]]):
+    return False
+  if any([x < -180 or x > 180 for x in [top_left_lon, bottom_right_lon]]):
+    return False
+  # max 10 degrees in either direction, same as noaa point store
+  if abs(top_left_lat - bottom_right_lat) > 10:
+    return False
+  if abs(top_left_lon - bottom_right_lon) > 10:
+    return False
+  # top left should be north and west of bottom right
   return top_left_lat > bottom_right_lat and top_left_lon < bottom_right_lon
 
 
@@ -299,22 +309,30 @@ def bbox_form(
   if not is_valid_bbox(
       bbox.top_left_lat, bbox.top_left_lon,
       bbox.bottom_right_lat, bbox.bottom_right_lon):
-    return templates.TemplateResponse(
-      "partials/save_bbox.html",
-      {"request": request, "error": "Invalid bounding box"})
+    resp = templates.TemplateResponse(
+      "partials/save_bbox.html", {"request": request })
+    resp.headers["hx-trigger"] = json.dumps({
+      "showAlert": "Bounding box is invalid, or too large."
+    })
+    return resp
 
   db_user = crud.get_user_by_email(db, user.email)
   if len(db_user.bboxes) > MAX_BOXES_PER_USER:
-    return templates.TemplateResponse(
-      "partials/save_bbox.html",
-      {"request": request,
-       "error": f"You can only have {MAX_BOXES_PER_USER} bounding boxes"})
+    resp = templates.TemplateResponse(
+      "partials/save_bbox.html", {"request": request})
+    resp.headers["hx-trigger"] = json.dumps({
+      "showAlert": f"Max {MAX_BOXES_PER_USER} boxes/user. Delete one to add more."
+    })
 
   # good to save bbox
   crud.create_user_bbox(db, bbox, db_user.id)
-  return templates.TemplateResponse(
+  resp = templates.TemplateResponse(
     "partials/save_bbox.html", {"request": request}
   )
+  resp.headers["hx-trigger"] = json.dumps({
+    "showAlert": "Created new bounding box!"
+  })
+  return resp
 
 
 @app.get("/login", include_in_schema=False)
@@ -467,15 +485,23 @@ def delete_bbox(
     return HTTPException(
       status_code=204,
     )
+  
+  # get the orders so we can remove them from the ui and alert
   orders = crud.get_data_orders_by_bbox_id(db, bbox_id)
+  if not orders:
+    orders = []
+
+  # actually delete the bbox
   if not crud.delete_user_bbox(db, bbox_id, user.id):
     return HTTPException(
       status_code=204,
       detail="Invalid permission, or invalid bbox id"
     )
+  
+  # alert and trigger event to remove from ui
   resp = Response(status_code=200)
   resp.headers["hx-trigger"] = json.dumps({
-    "showAlert": bbox_id,
+    "showAlert": f"Deleted box: {bbox_id} (and {len(orders)} orders)",
     "deletedOrders": [x.id for x in orders]
   })
   return resp 
@@ -512,7 +538,7 @@ def send_order_to_noaa(
   return resp.json()
 
 
-@app.get("/order/{bbox_id}/{data_type}", include_in_schema=False)
+@app.post("/order/{bbox_id}/{data_type}", include_in_schema=False)
 def order(
     request: Request,
     bbox_id: int,
