@@ -14,6 +14,7 @@ a little bit of js because of all the interaction with the map.
 """
 from datetime import timedelta, datetime, timezone
 import json
+import logging
 import os
 import requests
 from typing import Annotated
@@ -42,6 +43,7 @@ load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 
 if not all([SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES]):
   raise ValueError("Missing environment variable(s)!")
@@ -669,4 +671,23 @@ def order_status(
   return HTMLResponse(
     order.last_status,
     status_code=http_status
+  )
+
+
+bot_words = [
+  "wp-admin", "wp-login", "wp-content", "wp-includes", "wp-json", ".php",
+  ".env", 
+]
+
+# a catch all route, redirect to rickroll if contains any of the common bot
+# words - NOTE: This needs to be the last route in the file
+@app.get("/{catchall:path}", include_in_schema=False)
+@limiter.limit("60/minute")
+def catchall(request: Request, catchall: str):
+  logging.info(f"catchall redirect: {catchall}")
+  if any([x in catchall for x in bot_words]):
+    return RedirectResponse("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+  raise HTTPException(
+    status_code=404,
+    detail="Page not found"
   )
