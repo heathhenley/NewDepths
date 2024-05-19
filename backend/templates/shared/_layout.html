@@ -65,7 +65,15 @@
           <a href="/account" class="underline">Account</a> |
           <a href="/logout" class="underline">Logout</a>
           {% else %}
-          <a href="/login" class="underline">Login</a>
+          <a
+            href="/login"
+            class="underline"
+            data-modal-show="default-modal"
+            hx-get="/login"
+            hx-swap="outerHTML"
+            hx-target="#form"
+            >Login</a
+          >
           {% endif %}
         </div>
       </header>

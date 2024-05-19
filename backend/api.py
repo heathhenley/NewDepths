@@ -325,6 +325,7 @@ def bbox_form(
     resp.headers["hx-trigger"] = json.dumps({
       "showAlert": f"Max {MAX_BOXES_PER_USER} boxes/user. Delete one to add more."
     })
+    return resp
 
   # good to save bbox
   crud.create_user_bbox(db, bbox, db_user.id)

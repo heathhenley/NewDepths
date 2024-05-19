@@ -8,18 +8,23 @@ htmx.on("deletedOrders", function (evt) {
   });
 });
 
+
 htmx.on("showAlert", function (evt) {
+  // TODO add cooler alerts that change based on the type of alert
   const alert = document.getElementById("toast-simple");
-  if (!alert) {
+  const newAlert = alert.parentNode.appendChild(alert.cloneNode(true));
+  if (!alert || !newAlert || !evt.detail.value) {
     return;
   }
-  const alertText = document.getElementById("toast-message");
+  // change id so we don't grab the same alert again
+  newAlert.id = "toast-" + Math.random().toString(32).substring(4);
+  const alertText = newAlert.querySelector("#toast-message");
   if (!alertText) {
     return;
   }
   alertText.innerText = evt.detail.value;
-  alert.classList.remove("hidden");
+  newAlert.classList.remove("hidden");
   setInterval(() => {
-    alert.classList.add("hidden");
+    newAlert.remove();
   }, 4000);
 });
