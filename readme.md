@@ -19,8 +19,8 @@ it's also possible to pull down the repo and run it yourself in docker. Feel
 free to reach out or open an issue with any questions or suggestions.
 
 Implemented using [FastAPI](https://fastapi.tiangolo.com/) to serve html (with [Jinja2 templates](https://jinja.palletsprojects.com/en/2.10.x/)) - wanted
-play with this approach doing everything on the server and use [HTMX](https://htmx.org/) for light
-interaction vs working with client heavy popular frameworks just for fun.
+play with this approach eg, doing almost everything on the server and using [HTMX](https://htmx.org/) for light client side
+interaction vs working with client heavy popular frameworks, just for fun.
 
 ### Run it with docker
 If you want to run it, the simplest way is to use docker-compose, if you have
