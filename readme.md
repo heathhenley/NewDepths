@@ -6,7 +6,7 @@ in a user defined area. The app queries the MBES, CSB, and NOS data from NOAA
 (at the time, maybe more will be added). You can log in, define a bounding box, 
 and then receive a daily email with a summary of the new data in that area.
 
-In addtion to getting a daily email when there is new data in your bounding boxes,
+In addition to getting a daily email when there is new data in your bounding boxes,
 you can now request the MBES or CSB data in CSV format from NOAA's point store
 API right from your account page. There are more options to customize this that may
 be added in the future, if you need them now consider using their
@@ -14,13 +14,13 @@ be added in the future, if you need them now consider using their
 
 It's live at [newdepths.xyz](https://newdepths.xyz).
 
-There is also an [api](https://newdepths.xyz/docs) so that everything could be implemented in a different, probably better
-frontend. I know the existing front end included with the project is not 
-pretty, but it demonstrates the functionality.
-
 I get that people might not want to give their email to a random website, so
 it's also possible to pull down the repo and run it yourself in docker. Feel
 free to reach out or open an issue with any questions or suggestions.
+
+Implemented using [FastAPI](https://fastapi.tiangolo.com/) to serve html (with [Jinja2 templates](https://jinja.palletsprojects.com/en/2.10.x/)) - wanted
+play with this approach doing everything on the server and use [HTMX](https://htmx.org/) for light
+interaction vs working with client heavy popular frameworks just for fun.
 
 ### Run it with docker
 If you want to run it, the simplest way is to use docker-compose, if you have
