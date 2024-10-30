@@ -1,6 +1,8 @@
 services:
   api:
-    build: Dockerfile-api
+    build:
+      context: .
+      dockerfile: Dockerfile-api
     ports:
       - "80:80"
     volumes:
