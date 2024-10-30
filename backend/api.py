@@ -25,8 +25,8 @@ from fastapi import (
   templating, staticfiles, Request, Response
 )
 from fastapi.responses import RedirectResponse, HTMLResponse
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import JWTError, jwt
+from fastapi.security import OAuth2PasswordBearer
+from jose import jwt
 from passlib.context import CryptContext
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -35,6 +35,7 @@ from sqlalchemy.orm import Session
 
 from db import database, crud, models
 from schemas import schemas
+from routers.ricky import rick_roll_router
 
 
 MAX_BOXES_PER_USER = 5
@@ -89,25 +90,43 @@ def get_db():
     db.close()
 
 
-# Gets the user from JWT in header if it exists
-def get_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
-    db: Session = Depends(get_db)):
-  credentials_exception = HTTPException(
-    status_code=status.HTTP_401_UNAUTHORIZED,
-    detail="Could not validate credentials",
-    headers={"WWW-Authenticate": "Bearer"}
-  )
+# Get the user from the JWT - helper - sometimes we don't want to redirect,
+# just check if the user is logged in or not
+def user_from_token(token: str, db: Session) -> models.User:
+  payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+  email = payload.get("sub")
+  if email is None or not (user := crud.get_user_by_email(db, email)):
+    return None
+  return user
+
+
+# Logged in user dependency
+def get_user_or_redirect(
+    request: Request,
+    url: str = "/login",
+    db: Session = Depends(get_db)) -> models.User:
+  """ Get the user from the JWT in the http only cookie
+
+  If the user is not found, redirect to the url parameter. 
+  """
+
+  if not (token := request.cookies.get("token", None)):
+    raise HTTPException(
+      status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+      detail="Redirecting to login - not authenticated",
+      headers={"Location": url})
+
   try:
-    payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    email: str = payload.get("sub")
-    if email is None:
-      raise credentials_exception
-    token_data = schemas.TokenData(email=email)
-    if not (user := crud.get_user_by_email(db, token_data.email)):
-      raise credentials_exception
-  except JWTError:
-    raise credentials_exception
+    if not (user := user_from_token(token, db)):
+      raise HTTPException(
+        status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+        detail="Redirecting to login - not authenticated",
+        headers={"Location": url})
+  except HTTPException:
+    raise HTTPException(
+      status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+      detail="Redirecting to login - not authenticated",
+      headers={"Location": url})
   return user
 
 
@@ -136,64 +155,6 @@ def create_access_token(data: dict, expires_delta: timedelta):
   return encoded_jwt
 
 
-@app.get("/users/me", response_model=schemas.User, tags=["auth"])
-def read_user_info(
-    current_user: schemas.User = Depends(get_user)):
-  """ Get the currently authenticated user's info"""
-  return current_user
-
-
-@app.post("/users", response_model=schemas.User, tags=["auth"])
-@limiter.limit("10/minute")
-def create_user(
-    request: Request,
-    user: schemas.UserFromForm,
-    db: Session = Depends(get_db)):
-  """ Create a new user.
-
-  Returns a 201 if successful, 400 if there was an error.
-  """
-  if crud.get_user_by_email(db, user.email):
-    raise HTTPException(
-      status_code=400,
-      detail="Email already registered"
-    )
-  if user.password != user.password_confirm:
-    raise HTTPException(
-      status_code=400,
-      detail="Passwords do not match"
-    )
-  user_create = schemas.UserCreate(
-    hashed_password=hash_password(user.password),
-    email=user.email,
-    full_name=user.full_name
-  )
-  return crud.create_user(db, user_create)
-
-
-@app.post("/token", tags=["auth"])
-@limiter.limit("10/minute")
-def login_for_access_token(
-   request: Request,
-   form_data: OAuth2PasswordRequestForm = Depends(),
-   db: Session = Depends(get_db)):
-  # try to get the user from the database
-  user = authenticate_user(db, form_data.email, form_data.password)
-  if not user:
-    raise HTTPException(
-      status_code=400,
-      detail="Incorrect username or password"
-    )
-  # create a jwt token and return it
-  access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-  access_token = create_access_token(
-    data={"sub": user.email},
-    expires_delta=access_token_expires
-  )
-  return schemas.Token(access_token=access_token, token_type="bearer")
-
-
-# TODO: add bbox area limit?
 def is_valid_bbox(
     top_left_lat: float,
     top_left_lon: float,
@@ -219,59 +180,12 @@ def strong_password(password: str):
   return len(password) >= 8
 
 
-@app.get(
-    "/api/datatypes",
-    tags=["notifications"],
-    response_model=list[schemas.DataTypes])
-def get_datatypes(db: Session = Depends(get_db)):
-  """ List the available data types for notifications.
-
-  They correspond to different data sources at NOAA.
-  """
-  return crud.get_data_types(db)
-
-
-@app.get("/api/bboxes", tags=["notifications"])
-def get_bboxes(
-   user: schemas.User = Depends(get_user),
-   db: Session = Depends(get_db)):
-  """ Get all the bounding boxes for this user.
-
-  Returns a 200 if successful, 400 if the token is invalid.
-  """
-  return crud.get_user_bboxes(db, user.id)
-
-
-@app.post("/api/bboxes", tags=["notifications"])
-@limiter.limit("10/minute")
-def add_bbox(
-  request: Request,
-  bbox: schemas.BoundingBox,
-  user: Annotated[schemas.User, Depends(get_user)],
-  db: Session = Depends(get_db)):
-  """ Add a bounding box for notification to the database for this user.
-
-  Returns a 201 if successful, 400 if the bounding box is invalid.
-  """
-  if not is_valid_bbox(
-      bbox.top_left_lat, bbox.top_left_lon,
-      bbox.bottom_right_lat, bbox.bottom_right_lon):
-    raise HTTPException(
-      status_code=400,
-      detail="Invalid bounding box"
-    )
-  db_user = crud.get_user_by_email(db, user.email)
-  crud.create_user_bbox(db, bbox, db_user.id)
-  return {"message": "New bounding box added!"}
-
-
 @app.get("/", include_in_schema=False)
 @limiter.limit("60/minute")
-def index(request: Request, db: Session = Depends(get_db)):
+def index(request: Request, db: Session = Depends(get_db) ):
   current_user = None
   try:
-    token = request.cookies.get("token")
-    current_user = get_user(token, db)
+    current_user = user_from_token(request.cookies.get("token"), db)
   except (HTTPException, KeyError, AttributeError):
     pass
   return templates.TemplateResponse(
@@ -295,13 +209,9 @@ def bbox_form(
     top_left_lon: Annotated[float, Form()],
     bottom_right_lat: Annotated[float, Form()],
     bottom_right_lon: Annotated[float, Form()],
-    db: Session = Depends(get_db)):
-  try:
-    token = request.cookies.get("token")
-    user = get_user(token, db)
-  except (HTTPException, KeyError):
-    return templates.TemplateResponse("partials/not_logged_in.html", {"request": request})
-  
+    db: Session = Depends(get_db),
+    user: schemas.User = Depends(get_user_or_redirect)):
+ 
   bbox = schemas.BoundingBox(
     top_left_lat=top_left_lat,
     top_left_lon=top_left_lon,
@@ -465,13 +375,10 @@ def register(
   return request
 
 @app.get("/account", include_in_schema=False)
-def account(request: Request, db: Session = Depends(get_db)):
-  try:
-    token = request.cookies.get("token")
-    user = get_user(token, db)
-  except (HTTPException, KeyError, AttributeError):
-    # redirect to home if not logged in
-    return RedirectResponse("/")
+def account(
+    request: Request,
+    url: str = "/login",
+    user: schemas.User = Depends(get_user_or_redirect)):
   return templates.TemplateResponse(
     "account.html", {"request": request, "current_user": user})
   
@@ -480,14 +387,8 @@ def account(request: Request, db: Session = Depends(get_db)):
 def delete_bbox(
     request: Request,
     bbox_id: int,
+    user: schemas.User = Depends(get_user_or_redirect),
     db: Session = Depends(get_db)):
-  try:
-    token = request.cookies.get("token")
-    user = get_user(token, db)
-  except (HTTPException, KeyError):
-    return HTTPException(
-      status_code=204,
-    )
   
   # get the orders so we can remove them from the ui and alert
   orders = crud.get_data_orders_by_bbox_id(db, bbox_id)
@@ -530,12 +431,13 @@ def send_order_to_noaa(
       "email": user.email,
       "datasets": [
         {
-          "type": data_type
+          "label": data_type
         },
       ]
     }
   )
   if not resp.ok:
+    print(f"Error sending order to NOAA: {resp.status_code}")
     print(resp.json())
     raise Exception("Error sending order to NOAA")
   return resp.json()
@@ -546,18 +448,11 @@ def order(
     request: Request,
     bbox_id: int,
     data_type: str = "csb",
-    db: Session = Depends(get_db)):
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_user_or_redirect)):
   
   if not request.headers.get("hx-request"):
     return RedirectResponse("/account")
-
-  try:
-    token = request.cookies.get("token")
-    user = get_user(token, db)
-  except (HTTPException, KeyError, AttributeError):
-    # redirect to home if not logged in
-    # TODO: maybe redirect param so they can get redirected after login?
-    return RedirectResponse("/login")
   
   if data_type not in ["csb", "multibeam"]:
     raise HTTPException(
@@ -595,6 +490,7 @@ def order(
     data_type=data_type
   )
   crud.create_data_order(db, user.id, data_order)
+
   return templates.TemplateResponse(
     "partials/order_table.html", {
       "request": request,
@@ -625,17 +521,12 @@ def prettier_status(status: str, url: str):
 def order_status(
     request: Request,
     order_id: int,
-    db: Session = Depends(get_db)) -> str:
+    db: Session = Depends(get_db),
+    user: schemas.User = Depends(get_user_or_redirect)) -> str:
   
   if not request.headers.get("hx-request"):
     return RedirectResponse("/account")
   
-  try:
-    token = request.cookies.get("token")
-    user = get_user(token, db)
-  except (HTTPException, KeyError, AttributeError):
-    # redirect to home if not logged in
-    return RedirectResponse("/login")
   
   if not (order := crud.get_data_order_by_id(db, order_id)):
     raise HTTPException(
@@ -674,21 +565,5 @@ def order_status(
     status_code=http_status
   )
 
-
-bot_words = [
-  "wp-admin", "wp-login", "wp-content", "wp-includes", "wp-json", ".php",
-  ".env", 
-]
-
-# a catch all route, redirect to rickroll if contains any of the common bot
-# words - NOTE: This needs to be the last route in the file
-@app.get("/{catchall:path}", include_in_schema=False)
-@limiter.limit("60/minute")
-def catchall(request: Request, catchall: str):
-  logging.info(f"catchall redirect: {catchall}")
-  if any([x in catchall for x in bot_words]):
-    return RedirectResponse("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
-  raise HTTPException(
-    status_code=404,
-    detail="Page not found"
-  )
+# NOTE: this needs to be the last route in the file
+app.include_router(rick_roll_router)
