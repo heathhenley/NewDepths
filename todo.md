@@ -1,5 +1,4 @@
 Backend
-- some kind of bug with order status - need to look into that more (specifically when it's pending I think there may be more status enums that need to be checked for)
 - dry out fetchers more
   - they are all basically the same with different urls, different time
     attributes (ARRIVAL_DATE, etc), and slightly different return attributes
