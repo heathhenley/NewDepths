@@ -24,7 +24,13 @@ Backend
 - support multiple emails per user / multiple webhooks per user
   - configure boxes to notify different emails/webhooks
   - configure boxes to only apply to certain data
-
+- handler for sns notifications
+  - get notification, figure out who cares about it, queue up the email
+    or webhook
+- refactor in to use cases, right now it's all mixed with request handling / 
+  response handling
+  - use cases should be the only thing that touches the db
+  - they use the crud tools that are already there
 
 Frontend
 - show users existing bboxes on map ? 

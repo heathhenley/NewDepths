@@ -12,48 +12,30 @@ Written like this to get a chance to play with HTMX, roll my own auth, and take
 a break from the js/ts frameworks-of-the-day. Though it's still going to have
 a little bit of js because of all the interaction with the map.
 """
-from datetime import timedelta, datetime, timezone
-import json
-import logging
-import os
-import requests
-from typing import Annotated
-
-from dotenv import load_dotenv
 from fastapi import (
-  FastAPI, Form, Depends, HTTPException, status,
-  templating, staticfiles, Request, Response
+  FastAPI, Depends, HTTPException,
+  templating, staticfiles, Request
 )
-from fastapi.responses import RedirectResponse, HTMLResponse
-from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
-from passlib.context import CryptContext
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.orm import Session
 
 from db import database, crud, models
-from schemas import schemas
+from dependencies.user import get_user_or_none
+from dependencies.db import get_db
+
+# The routers
 from routers.ricky import rick_roll_router
+from routers.noaa import noaa_router
+from routers.bbox import bbox_router
+from routers.user import user_router
 
-
-MAX_BOXES_PER_USER = 5
-
-load_dotenv()
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
-logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
-
-if not all([SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES]):
-  raise ValueError("Missing environment variable(s)!")
-
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 models.Base.metadata.create_all(bind=database.engine)
 
+# the main app object
 app = FastAPI(
   docs_url="/docs",
   redoc_url=None,
@@ -68,502 +50,38 @@ app = FastAPI(
     "url": "https://opensource.org/licenses/MIT"
   }
 )
-
+# static files and templates
 app.mount("/static", staticfiles.StaticFiles(directory="static"), name="static")
-
 templates = templating.Jinja2Templates(directory="templates")
 
-# OAuth2 scheme
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
+# Rate limiting
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
-# DB Dependency
-def get_db():
-  db = database.SessionLocal()
-  try:
-    yield db
-  finally:
-    db.close()
-
-
-# Get the user from the JWT - helper - sometimes we don't want to redirect,
-# just check if the user is logged in or not
-def user_from_token(token: str, db: Session) -> models.User:
-  payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-  email = payload.get("sub")
-  if email is None or not (user := crud.get_user_by_email(db, email)):
-    return None
-  return user
-
-
-# Logged in user dependency
-def get_user_or_redirect(
-    request: Request,
-    url: str = "/login",
-    db: Session = Depends(get_db)) -> models.User:
-  """ Get the user from the JWT in the http only cookie
-
-  If the user is not found, redirect to the url parameter. 
-  """
-
-  if not (token := request.cookies.get("token", None)):
-    raise HTTPException(
-      status_code=status.HTTP_307_TEMPORARY_REDIRECT,
-      detail="Redirecting to login - not authenticated",
-      headers={"Location": url})
-
-  try:
-    if not (user := user_from_token(token, db)):
-      raise HTTPException(
-        status_code=status.HTTP_307_TEMPORARY_REDIRECT,
-        detail="Redirecting to login - not authenticated",
-        headers={"Location": url})
-  except HTTPException:
-    raise HTTPException(
-      status_code=status.HTTP_307_TEMPORARY_REDIRECT,
-      detail="Redirecting to login - not authenticated",
-      headers={"Location": url})
-  return user
-
-
-def verify_password(plain_password, hashed_password):
-  return pwd_context.verify(plain_password, hashed_password)
-
-
-def hash_password(password):
-  return pwd_context.hash(password)
-
-
-def authenticate_user(db: Session, email: str, password: str):
-  user = crud.get_user_by_email(db, email)
-  if not user:
-    return False
-  if not verify_password(password, user.hashed_password):
-    return False
-  return user
-
-
-def create_access_token(data: dict, expires_delta: timedelta):
-  to_encode = data.copy()
-  expire = datetime.now(timezone.utc) + expires_delta
-  to_encode.update({"exp": expire})
-  encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-  return encoded_jwt
-
-
-def is_valid_bbox(
-    top_left_lat: float,
-    top_left_lon: float,
-    bottom_right_lat: float,
-    bottom_right_lon: float):
-  """ Check if the bounding box is valid. """
-  # check physical limits
-  if any([x < -90 or x > 90 for x in [top_left_lat, bottom_right_lat]]):
-    return False
-  if any([x < -180 or x > 180 for x in [top_left_lon, bottom_right_lon]]):
-    return False
-  # max 10 degrees in either direction, same as noaa point store
-  if abs(top_left_lat - bottom_right_lat) > 10:
-    return False
-  if abs(top_left_lon - bottom_right_lon) > 10:
-    return False
-  # top left should be north and west of bottom right
-  return top_left_lat > bottom_right_lat and top_left_lon < bottom_right_lon
-
-
-def strong_password(password: str):
-  """ Check if the password is strong enough. """
-  return len(password) >= 8
-
-
+# The main route - where it all starts
 @app.get("/", include_in_schema=False)
 @limiter.limit("60/minute")
 def index(request: Request, db: Session = Depends(get_db) ):
   current_user = None
   try:
-    current_user = user_from_token(request.cookies.get("token"), db)
+    current_user = get_user_or_none(request.cookies.get("token"), db)
   except (HTTPException, KeyError, AttributeError):
     pass
   return templates.TemplateResponse(
     "index.html", {"request": request, "current_user": current_user})
 
 
-@app.get("/bbox_form", include_in_schema=False)
-def bbox_form(request: Request):
-  if request.headers.get("hx-request"):
-    return templates.TemplateResponse(
-      "partials/save_bbox.html", {"request": request})
-  return templates.TemplateResponse(
-    "index.html", {"request": request, "bbox_form": "true"})
+# User login/logout/register/account routes
+app.include_router(user_router)
 
+# Create and delete bounding boxes
+app.include_router(bbox_router)
 
-@app.post("/bbox_form", include_in_schema=False)
-@limiter.limit("10/minute")
-def bbox_form(
-    request: Request,
-    top_left_lat: Annotated[float, Form()],
-    top_left_lon: Annotated[float, Form()],
-    bottom_right_lat: Annotated[float, Form()],
-    bottom_right_lon: Annotated[float, Form()],
-    db: Session = Depends(get_db),
-    user: schemas.User = Depends(get_user_or_redirect)):
- 
-  bbox = schemas.BoundingBox(
-    top_left_lat=top_left_lat,
-    top_left_lon=top_left_lon,
-    bottom_right_lat=bottom_right_lat,
-    bottom_right_lon=bottom_right_lon
-  )
-  if not is_valid_bbox(
-      bbox.top_left_lat, bbox.top_left_lon,
-      bbox.bottom_right_lat, bbox.bottom_right_lon):
-    resp = templates.TemplateResponse(
-      "partials/save_bbox.html", {"request": request })
-    resp.headers["hx-trigger"] = json.dumps({
-      "showAlert": "Bounding box is invalid, or too large."
-    })
-    return resp
+# Submit orders to NOAA
+app.include_router(noaa_router)
 
-  db_user = crud.get_user_by_email(db, user.email)
-  if len(db_user.bboxes) > MAX_BOXES_PER_USER:
-    resp = templates.TemplateResponse(
-      "partials/save_bbox.html", {"request": request})
-    resp.headers["hx-trigger"] = json.dumps({
-      "showAlert": f"Max {MAX_BOXES_PER_USER} boxes/user. Delete one to add more."
-    })
-    return resp
-
-  # good to save bbox
-  crud.create_user_bbox(db, bbox, db_user.id)
-  resp = templates.TemplateResponse(
-    "partials/save_bbox.html", {"request": request}
-  )
-  resp.headers["hx-trigger"] = json.dumps({
-    "showAlert": "Created new bounding box!"
-  })
-  return resp
-
-
-@app.get("/login", include_in_schema=False)
-def login(request: Request):
-  if request.headers.get("hx-request"):
-    response = templates.TemplateResponse(
-      "partials/login.html", {"request": request})
-    response.headers["vary"] = "hx-request"
-    return response
-  response = templates.TemplateResponse(
-    "index.html", {"request": request, "login": "true"})
-  response.headers["vary"] = "hx-request"
-  return response
-
-
-@app.post("/login", include_in_schema=False)
-@limiter.limit("10/minute")
-def login(
-    request: Request,
-    email: Annotated[str, Form()],
-    password: Annotated[str, Form()],
-    db: Session = Depends(get_db)):
-
-  user = authenticate_user(db, email, password)
-
-  if not user:
-    return templates.TemplateResponse("index.html",
-      {"request": request,
-       "login": "true",
-       "error": "Invalid credentials"})
-
-  access_token = create_access_token(
-    data={"sub": user.email},
-    expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-  )
-  response = templates.TemplateResponse(
-      "index.html", {"request": request, "current_user": user})
-  response.set_cookie(
-    key="token",
-    value=access_token,
-    httponly=True,
-    max_age=60*int(ACCESS_TOKEN_EXPIRE_MINUTES)
-  )
-  return response
-
-
-@app.get("/logout", include_in_schema=False)
-def logout(request: Request):
-  response = templates.TemplateResponse(
-    "index.html", {"request": request})
-  response.delete_cookie(key="token")
-  return response
-
-
-@app.get("/register", include_in_schema=False)
-@limiter.limit("10/minute")
-def register(request: Request):
-  if request.headers.get("hx-request"):
-    return templates.TemplateResponse(
-      "partials/register.html", {"request": request})
-  return templates.TemplateResponse(
-    "index.html", {"request": request, "register": "true"})
-
-
-@app.post("/register", include_in_schema=False)
-@limiter.limit("10/minute")
-def register(
-    request: Request,
-    email: Annotated[str, Form()],
-    password: Annotated[str, Form()],
-    password_confirm: Annotated[str, Form()],
-    db: Session = Depends(get_db)):
-
-  if not email or not password or not password_confirm:
-    return templates.TemplateResponse(
-      "index.html", {
-        "request": request,
-        "register": "true",
-        "error": "All fields are required"}
-    )
-
-  if (crud.get_user_by_email(db, email)):
-    return templates.TemplateResponse(
-      "index.html", {
-        "request": request,
-        "register": "true",
-        "error": "Email already registered"}
-    )
-
-  if password != password_confirm:
-    return templates.TemplateResponse(
-      "index.html", {
-        "request": request,
-        "register": "true",
-        "error": "Passwords do not match"}
-    )
-
-  if not strong_password(password):
-    return templates.TemplateResponse(
-      "index.html", {
-        "request": request,
-        "register": "true",
-        "error": "Password must be at least 8 characters long"}
-    )
-
-  user_create = schemas.UserCreate(
-    hashed_password=hash_password(password),
-    email=email,
-  )
-  crud.create_user(db, user_create)
-
-  # log user in automatically after registering
-  user = authenticate_user(db, email, password)
-  access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-  access_token = create_access_token(
-    data={"sub": user.email},
-    expires_delta=access_token_expires
-  )
-  request = templates.TemplateResponse(
-      "index.html", {"request": request, "current_user": user})
-  request.set_cookie(
-    key="token",
-    value=access_token,
-    httponly=True,
-    max_age=60*int(ACCESS_TOKEN_EXPIRE_MINUTES)
-  )
-  return request
-
-@app.get("/account", include_in_schema=False)
-def account(
-    request: Request,
-    url: str = "/login",
-    user: schemas.User = Depends(get_user_or_redirect)):
-  return templates.TemplateResponse(
-    "account.html", {"request": request, "current_user": user})
-  
-@app.delete("/bboxes/{bbox_id}", include_in_schema=False)
-@limiter.limit("10/minute")
-def delete_bbox(
-    request: Request,
-    bbox_id: int,
-    user: schemas.User = Depends(get_user_or_redirect),
-    db: Session = Depends(get_db)):
-  
-  # get the orders so we can remove them from the ui and alert
-  orders = crud.get_data_orders_by_bbox_id(db, bbox_id)
-  if not orders:
-    orders = []
-
-  # actually delete the bbox
-  if not crud.delete_user_bbox(db, bbox_id, user.id):
-    return HTTPException(
-      status_code=204,
-      detail="Invalid permission, or invalid bbox id"
-    )
-  
-  # alert and trigger event to remove from ui
-  resp = Response(status_code=200)
-  resp.headers["hx-trigger"] = json.dumps({
-    "showAlert": f"Deleted box: {bbox_id} (and {len(orders)} orders)",
-    "deletedOrders": [x.id for x in orders]
-  })
-  return resp 
-
-
-def bbox_to_flat(bbox: models.BoundingBox):
-  # their convention is southwest corner to northeast corner, with lon first
-  return (f"{bbox.top_left_lon},{bbox.bottom_right_lat},"
-          f"{bbox.bottom_right_lon},{bbox.top_left_lat}")
-
-
-def send_order_to_noaa(
-    bbox: models.BoundingBox,
-    data_type: str,
-    user: models.User):
-  """ Send an order to NOAA for data within the bounding box. """
-  points_url = f"https://q81rej0j12.execute-api.us-east-1.amazonaws.com/order"
-  resp = requests.post(
-    points_url,
-    headers={"Content-Type": "application/json"},
-    json={
-      "bbox": bbox_to_flat(bbox), 
-      "email": user.email,
-      "datasets": [
-        {
-          "label": data_type
-        },
-      ]
-    }
-  )
-  if not resp.ok:
-    print(f"Error sending order to NOAA: {resp.status_code}")
-    print(resp.json())
-    raise Exception("Error sending order to NOAA")
-  return resp.json()
-
-
-@app.post("/order/{bbox_id}/{data_type}", include_in_schema=False)
-def order(
-    request: Request,
-    bbox_id: int,
-    data_type: str = "csb",
-    db: Session = Depends(get_db),
-    user: models.User = Depends(get_user_or_redirect)):
-  
-  if not request.headers.get("hx-request"):
-    return RedirectResponse("/account")
-  
-  if data_type not in ["csb", "multibeam"]:
-    raise HTTPException(
-      status_code=404,
-      detail="Data type not found"
-    )
-
-  if not (bbox := crud.get_bbox_by_id(db, bbox_id)):
-    raise HTTPException(
-      status_code=404,
-      detail="Bounding box not found"
-    )
- 
-  if bbox.owner_id != user.id:
-    raise HTTPException(
-      status_code=403,
-      detail="You do not have permission to order data for this bbox"
-    )
-
-  try:  
-    resp = send_order_to_noaa(bbox, data_type, user) 
-  except Exception as e:
-    print(e)
-    raise HTTPException(
-      status_code=500,
-      detail="Error sending order to NOAA"
-    )
-
-  data_order = schemas.DataOrderCreate(
-    noaa_ref_id=resp["url"].split("/")[-1],
-    order_date=datetime.now(timezone.utc).isoformat(),
-    check_status_url=resp["url"],
-    bbox_id=bbox_id,
-    user_id=user.id,
-    data_type=data_type
-  )
-  crud.create_data_order(db, user.id, data_order)
-
-  return templates.TemplateResponse(
-    "partials/order_table.html", {
-      "request": request,
-      "current_user": user,
-      "status_url": resp["url"],
-      "message": resp["message"],
-    })
-
-
-def bucket_to_url(bucket_location: str):
-  base = "https://order-pickup.s3.amazonaws.com" 
-  uuid = bucket_location.split("/")[-1]
-  return f"{base}/{uuid}"
-
-
-def prettier_status(status: str, url: str):
-  if status == "complete":
-    link = f"<a class='underline' href='{url}'>Download</a>" if url else ""
-    return f"Complete! {link}"
-  if status == "created":
-    return "Created"
-  if status == "initialized":
-    return "Initialized"
-  return "Order status unknown"
-
-
-@app.get("/order_status/{order_id}", include_in_schema=False)
-def order_status(
-    request: Request,
-    order_id: int,
-    db: Session = Depends(get_db),
-    user: schemas.User = Depends(get_user_or_redirect)) -> str:
-  
-  if not request.headers.get("hx-request"):
-    return RedirectResponse("/account")
-  
-  
-  if not (order := crud.get_data_order_by_id(db, order_id)):
-    raise HTTPException(
-      status_code=404,
-      detail="Order not found"
-    )
-  
-  if order.user_id != user.id:
-    raise HTTPException(
-      status_code=403,
-      detail="You do not have permission to view this order"
-    )
-  
-  if "complete" not in order.last_status.lower():
-    # this is just to be nice and not hammer the NOAA api if we know the order
-    # is complete
-    try:
-      res = requests.get(order.check_status_url).json()
-      loc = res.get("output_location", None)
-      order.output_location = bucket_to_url(loc) if loc else None
-      order.last_status = prettier_status(res["status"], order.output_location)
-    except Exception as e:
-      print(e)
-      order.last_status = prettier_status("unknown", None)
-    db.commit()
-
-  # assuming we want to stop by default - so far I have only seen complete and
-  # and initialized statuses, created is mine
-  # so this only keeps going in the cases where I've seen that it should so far
-  http_status = 286 # 286 is a custom htmx status code to stop polling
-  if any([x in order.last_status.lower() for x in ["created", "initialized"]]):
-    http_status = 200  # tells htmx to continue polling
-  
-  return HTMLResponse(
-    order.last_status,
-    status_code=http_status
-  )
-
+# Catch all route for the rick roll
 # NOTE: this needs to be the last route in the file
 app.include_router(rick_roll_router)
