@@ -22,9 +22,10 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.orm import Session
 
-from db import database, crud, models
+from db import database, models
 from dependencies.user import get_user_or_none
 from dependencies.db import get_db
+from limiter import limiter
 
 # The routers
 from routers.ricky import rick_roll_router
@@ -54,15 +55,14 @@ app = FastAPI(
 app.mount("/static", staticfiles.StaticFiles(directory="static"), name="static")
 templates = templating.Jinja2Templates(directory="templates")
 
-# Rate limiting
-limiter = Limiter(key_func=get_remote_address)
+
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
 # The main route - where it all starts
 @app.get("/", include_in_schema=False)
-@limiter.limit("60/minute")
+@limiter.limit("10/minute")
 def index(request: Request, db: Session = Depends(get_db) ):
   current_user = None
   try:

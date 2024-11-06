@@ -2,8 +2,10 @@ import logging
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import RedirectResponse
 
+from limiter import limiter
 
-rick_roll_router = APIRouter()
+rick_roll_router = APIRouter(
+)
 
 
 bot_words = [
@@ -15,6 +17,7 @@ bot_words = [
 # a catch all route, redirect to rickroll if contains any of the common bot
 # words - NOTE: This needs to be the last route in the file
 @rick_roll_router.get("/{catchall:path}", include_in_schema=False)
+@limiter.shared_limit("10/minute", scope="catchall")
 def catchall(request: Request, catchall: str):
   logging.info(f"catchall redirect: {catchall}")
   if any([x in catchall for x in bot_words]):
