@@ -4,15 +4,14 @@ import os
 
 import resend
 from sqlalchemy.orm import Session
-from dotenv import load_dotenv
 
 from db.database import SessionLocal
 from db import crud, models
 from fetchers.data_fetchers import data_fetcher_factory, SurveyDataList
+from settings import RESEND_KEY
 
 
-load_dotenv()
-resend.api_key = os.getenv("RESEND_KEY")
+resend.api_key = RESEND_KEY
 
 
 def get_db():
