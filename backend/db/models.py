@@ -12,6 +12,7 @@ class User(Base):
   full_name = Column(String)
   active = Column(Boolean, default=True)
   hashed_password = Column(String)
+  google_sub = Column(String, nullable=True) # This a unique id per user 
   bboxes = relationship("BoundingBox", back_populates="owner")
   data_orders = relationship("DataOrder", back_populates="user")
 

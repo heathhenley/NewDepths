@@ -17,11 +17,12 @@ from fastapi import (
   templating, staticfiles, Request
 )
 from jose import jwt
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.orm import Session
 
+
+from auth.google import generate_google_auth_url
 from db import database, models
 from dependencies.user import get_user_or_none
 from dependencies.db import get_db
@@ -32,7 +33,7 @@ from routers.ricky import rick_roll_router
 from routers.noaa import noaa_router
 from routers.bbox import bbox_router
 from routers.user import user_router
-from routers.google_auth import generate_google_auth_url, google_auth_router
+from routers.google_auth import google_auth_router
 
 
 models.Base.metadata.create_all(bind=database.engine)

@@ -1,56 +1,26 @@
-from datetime import datetime, timedelta, timezone
-from jose import jwt
+from datetime import timedelta
 from typing import Annotated
 
 from fastapi import (
   APIRouter, Depends, Form, Request, templating
 )
-from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
+from auth.base import (
+  authenticate_user, create_access_token, hash_password, strong_password
+)
+from auth.google import generate_google_auth_url
 from db import crud
 from dependencies.db import get_db
 from dependencies.user import get_user_or_redirect
-from routers.google_auth import generate_google_auth_url
 from schemas import schemas
-from settings import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from settings import ACCESS_TOKEN_EXPIRE_MINUTES
 
 from limiter import limiter
 
 
 templates = templating.Jinja2Templates(directory="templates")
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 user_router = APIRouter()
-
-
-def verify_password(plain_password, hashed_password):
-  return pwd_context.verify(plain_password, hashed_password)
-
-
-def hash_password(password):
-  return pwd_context.hash(password)
-
-
-def authenticate_user(db: Session, email: str, password: str):
-  user = crud.get_user_by_email(db, email)
-  if not user:
-    return False
-  if not verify_password(password, user.hashed_password):
-    return False
-  return user
-
-
-def create_access_token(data: dict, expires_delta: timedelta):
-  to_encode = data.copy()
-  expire = datetime.now(timezone.utc) + expires_delta
-  to_encode.update({"exp": expire})
-  encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-  return encoded_jwt
-
-
-def strong_password(password: str):
-  """ Check if the password is strong enough. """
-  return len(password) >= 8
 
 
 @user_router.get("/login", include_in_schema=False)
@@ -97,6 +67,7 @@ def login(
     key="token",
     value=access_token,
     httponly=True,
+    secure=True,
     max_age=60*int(ACCESS_TOKEN_EXPIRE_MINUTES)
   )
   return response
@@ -190,6 +161,7 @@ def register(
     key="token",
     value=access_token,
     httponly=True,
+    secure=True,
     max_age=60*int(ACCESS_TOKEN_EXPIRE_MINUTES)
   )
   return request
