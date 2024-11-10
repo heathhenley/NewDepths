@@ -15,7 +15,7 @@ from limiter import limiter
 from schemas import schemas
 from settings import (
   GOOGLE_CLIENT_ID, GOOGLE_REDIRECT_URI, GOOGLE_CLIENT_SECRET,
-  ACCESS_TOKEN_EXPIRE_MINUTES
+  ACCESS_TOKEN_EXPIRE_MINUTES, DEFAULT_RATE_LIMIT
 )
 
 templates = templating.Jinja2Templates(directory="templates")
@@ -25,7 +25,7 @@ google_auth_router = APIRouter()
 
 # These are the endpoints to implement Google OAuth flow
 @google_auth_router.get("/googleauth/callback")
-@limiter.limit("10/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 def google_auth_callback(
   request: Request,
   code: str = None,

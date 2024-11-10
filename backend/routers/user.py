@@ -14,7 +14,7 @@ from db import crud
 from dependencies.db import get_db
 from dependencies.user import get_user_or_redirect
 from schemas import schemas
-from settings import ACCESS_TOKEN_EXPIRE_MINUTES
+from settings import ACCESS_TOKEN_EXPIRE_MINUTES, DEFAULT_RATE_LIMIT
 
 from limiter import limiter
 
@@ -24,7 +24,7 @@ user_router = APIRouter()
 
 
 @user_router.get("/login", include_in_schema=False)
-@limiter.limit("10/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 def login(request: Request):
   if request.headers.get("hx-request"):
     response = templates.TemplateResponse(
@@ -47,7 +47,7 @@ def login(request: Request):
 
 
 @user_router.post("/login", include_in_schema=False)
-@limiter.limit("10/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 def login(
     request: Request,
     email: Annotated[str, Form()],
@@ -86,7 +86,7 @@ def login(
 
 
 @user_router.get("/logout", include_in_schema=False)
-@limiter.limit("10/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 def logout(request: Request):
   response = templates.TemplateResponse(
     "index.html", {"request": request})
@@ -95,7 +95,7 @@ def logout(request: Request):
 
 
 @user_router.get("/register", include_in_schema=False)
-@limiter.limit("10/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 def register(request: Request):
   if request.headers.get("hx-request"):
     return templates.TemplateResponse(
@@ -114,7 +114,7 @@ def register(request: Request):
 
 
 @user_router.post("/register", include_in_schema=False)
-@limiter.limit("10/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 def register(
     request: Request,
     email: Annotated[str, Form()],
@@ -202,7 +202,7 @@ def register(
 
 
 @user_router.get("/account", include_in_schema=False)
-@limiter.limit("10/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 def account(
     request: Request,
     url: str = "/login",

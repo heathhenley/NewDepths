@@ -33,6 +33,8 @@ from routers.bbox import bbox_router
 from routers.user import user_router
 from routers.google_auth import google_auth_router
 
+from settings import DEFAULT_RATE_LIMIT
+
 
 models.Base.metadata.create_all(bind=database.engine)
 
@@ -63,7 +65,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # The main route - where it all starts
 @app.get("/", include_in_schema=False)
-@limiter.limit("10/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 def index(request: Request, db: Session = Depends(get_db) ):
   current_user = None
   try:

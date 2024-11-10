@@ -11,6 +11,7 @@ from db import crud
 from dependencies.user import get_user_or_redirect
 from dependencies.db import get_db
 from schemas import schemas
+from settings import DEFAULT_RATE_LIMIT
 
 from limiter import limiter
 
@@ -43,7 +44,7 @@ def is_valid_bbox(
 
 
 @bbox_router.get("/bbox_form", include_in_schema=False)
-@limiter.limit("10/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 def bbox_form(request: Request):
   if request.headers.get("hx-request"):
     return templates.TemplateResponse(
@@ -53,7 +54,7 @@ def bbox_form(request: Request):
 
 
 @bbox_router.post("/bbox_form", include_in_schema=False)
-@limiter.limit("10/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 def bbox_form(
     request: Request,
     top_left_lat: Annotated[float, Form()],
@@ -100,7 +101,7 @@ def bbox_form(
 
 
 @bbox_router.delete("/bboxes/{bbox_id}", include_in_schema=False)
-@limiter.limit("10/minute")
+@limiter.limit(DEFAULT_RATE_LIMIT)
 def delete_bbox(
     request: Request,
     bbox_id: int,
