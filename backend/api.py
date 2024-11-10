@@ -32,6 +32,7 @@ from routers.ricky import rick_roll_router
 from routers.noaa import noaa_router
 from routers.bbox import bbox_router
 from routers.user import user_router
+from routers.google_auth import generate_google_auth_url, google_auth_router
 
 
 models.Base.metadata.create_all(bind=database.engine)
@@ -51,6 +52,7 @@ app = FastAPI(
     "url": "https://opensource.org/licenses/MIT"
   }
 )
+
 # static files and templates
 app.mount("/static", staticfiles.StaticFiles(directory="static"), name="static")
 templates = templating.Jinja2Templates(directory="templates")
@@ -70,11 +72,18 @@ def index(request: Request, db: Session = Depends(get_db) ):
   except (HTTPException, KeyError, AttributeError):
     pass
   return templates.TemplateResponse(
-    "index.html", {"request": request, "current_user": current_user})
+    "index.html",
+    {
+      "request": request,
+      "current_user": current_user,
+    })
 
 
 # User login/logout/register/account routes
 app.include_router(user_router)
+
+# Routes related to third party auth (google)
+app.include_router(google_auth_router)
 
 # Create and delete bounding boxes
 app.include_router(bbox_router)

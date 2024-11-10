@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from db import crud
 from dependencies.db import get_db
 from dependencies.user import get_user_or_redirect
+from routers.google_auth import generate_google_auth_url
 from schemas import schemas
 from settings import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
@@ -57,7 +58,11 @@ def strong_password(password: str):
 def login(request: Request):
   if request.headers.get("hx-request"):
     response = templates.TemplateResponse(
-      "partials/login.html", {"request": request})
+      "partials/login.html",
+      {
+        "request": request,
+        "google_auth_url": generate_google_auth_url()
+      })
     response.headers["vary"] = "hx-request"
     return response
   response = templates.TemplateResponse(
@@ -78,7 +83,9 @@ def login(
     return templates.TemplateResponse("index.html",
       {"request": request,
        "login": "true",
-       "error": "Invalid credentials"})
+       "error": "Invalid credentials",
+       "google_auth_url": generate_google_auth_url()
+      })
 
   access_token = create_access_token(
     data={"sub": user.email},
@@ -109,9 +116,18 @@ def logout(request: Request):
 def register(request: Request):
   if request.headers.get("hx-request"):
     return templates.TemplateResponse(
-      "partials/register.html", {"request": request})
+      "partials/register.html",
+      {
+        "request": request,
+        "google_auth_url": generate_google_auth_url()
+      })
   return templates.TemplateResponse(
-    "index.html", {"request": request, "register": "true"})
+    "index.html",
+    {
+      "request": request,
+      "register": "true",
+      "google_auth_url": generate_google_auth_url()
+    })
 
 
 @user_router.post("/register", include_in_schema=False)
