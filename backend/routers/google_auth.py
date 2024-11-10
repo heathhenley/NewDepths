@@ -150,8 +150,10 @@ def google_auth_callback(
     data={"sub": user.email},
     expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
   )
-  response = templates.TemplateResponse(
-      "index.html", {"request": request, "current_user": user})
+  response = RedirectResponse(
+    url="/",
+    status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+  )
   response.set_cookie(
     key="token",
     value=access_token,
