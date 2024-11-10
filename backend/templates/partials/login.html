@@ -14,6 +14,12 @@
         {{ error }}
       </div>
       {% endif %}
+      <div>
+        <p class="text-sm py-2 font-light text-gray-500">
+          You can log in with a site specific email/password, or using Google. I recommend using Google. Either way, your email is used only to send you alerts about new NOAA data in the areas you are interested in.
+        </p>
+        {% include "partials/google_button.html" %}
+      </div>
       <form class="space-y-4 md:space-y-6" action="/login" method="POST">
         <div>
           <label
@@ -58,7 +64,7 @@
             hx-swap="outerHTML"
             hx-target="#form"
             class="font-medium text-blue-600 hover:underline"
-            >Register</a
+            >Register.</a
           >
         </p>
       </form>

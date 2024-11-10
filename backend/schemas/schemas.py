@@ -12,8 +12,13 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-  hashed_password: str
+  google_sub: str | None = None
+  hashed_password: str | None = None
 
+  def validate_user(self):
+    if not self.hashed_password and not self.google_sub:
+      raise ValueError(
+        "User must have either a hashed password or a google sub")
   class Config:
     from_attributes = True
 

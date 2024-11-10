@@ -17,15 +17,20 @@ def get_user_by_username(db: Session, username: str):
   return db.query(models.User).filter(models.User.username == username).first()
 
 
+def get_user_by_google_sub(db: Session, google_sub: str):
+  return (
+    db.query(models.User)
+    .filter(models.User.google_sub == google_sub)
+    .first()
+  )
+
+
 def get_users(db: Session, skip: int = 0, limit: int = 100):
   return db.query(models.User).offset(skip).limit(limit).all()
 
 
 def create_user(db: Session, user: schemas.UserCreate):
-  db_user = models.User(
-      email=user.email,
-      full_name=user.full_name,
-      hashed_password=user.hashed_password)
+  db_user = models.User(**user.model_dump())
   db.add(db_user)
   db.commit()
   db.refresh(db_user)
