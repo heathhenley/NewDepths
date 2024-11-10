@@ -30,7 +30,7 @@ google_auth_router = APIRouter()
 
 @google_auth_router.get("/googleauth/authorize")
 @limiter.limit(DEFAULT_RATE_LIMIT)
-def google_auth_authorize(request: Request, db: Session = Depends(get_db)):
+def google_auth_authorize(request: Request):
   """ Redirect the user to the Google OAuth consent screen. """
   state, url = generate_google_auth_url()
   response = RedirectResponse(
