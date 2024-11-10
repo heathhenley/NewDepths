@@ -16,13 +16,11 @@ from fastapi import (
   FastAPI, Depends, HTTPException,
   templating, staticfiles, Request
 )
-from jose import jwt
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.orm import Session
 
 
-from auth.google import generate_google_auth_url
 from db import database, models
 from dependencies.user import get_user_or_none
 from dependencies.db import get_db

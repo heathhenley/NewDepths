@@ -1,4 +1,5 @@
 from datetime import timedelta
+import logging
 import requests
 
 from fastapi import (
@@ -7,7 +8,7 @@ from fastapi import (
 from sqlalchemy.orm import Session
 
 from auth.base import create_access_token
-from auth.google import verify_google_id_token
+from auth.google import verify_google_id_token, validate_state, AuthStateToken
 from db import crud
 from dependencies.db import get_db
 from limiter import limiter
@@ -20,12 +21,15 @@ from settings import (
 templates = templating.Jinja2Templates(directory="templates")
 google_auth_router = APIRouter()
 
+
+
 # These are the endpoints to implement Google OAuth flow
 @google_auth_router.get("/googleauth/callback")
 @limiter.limit("10/minute")
 def google_auth_callback(
   request: Request,
   code: str = None,
+  state: str = None,
   error: str = None,
   db: Session = Depends(get_db),
 ):
@@ -41,7 +45,23 @@ def google_auth_callback(
       status_code=status.HTTP_307_TEMPORARY_REDIRECT,
       detail=f"Failed to authenticate with Google\n{error}",
       headers={"Location": "/login"})
+  
+  if not state or not (parsed_state := AuthStateToken.from_state_str(state)):
+    logging.error("No state or invalid state")
+    raise HTTPException(
+      status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+      detail="Failed to authenticate with Google",
+      headers={"Location": "/login"})
 
+  if not validate_state(parsed_state):
+    logging.error("Invalid state")
+    raise HTTPException(
+      status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+      detail="Failed to authenticate with Google",
+      headers={"Location": "/login"})
+
+  # If we're here, the state checks out and we're ready to exchange the code 
+  # for an access token and id token
   data = {
     'code': code,
     'client_id': GOOGLE_CLIENT_ID, 
@@ -49,14 +69,21 @@ def google_auth_callback(
     'redirect_uri': GOOGLE_REDIRECT_URI,
     'grant_type': 'authorization_code'
   }
-  r = requests.post(
-    'https://oauth2.googleapis.com/token',
-    data=data,
-    timeout=5
-  )
+  try:
+    r = requests.post(
+      'https://oauth2.googleapis.com/token',
+      data=data,
+      timeout=5
+    )
 
-  if r.status_code != 200:
-    print(r.text)
+    if r.status_code != 200:
+      logging.error(f"Failed to get token from google: {r.text}")
+      raise HTTPException(
+        status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+        detail="Failed to authenticate with Google",
+        headers={"Location": "/login"})
+  except Exception as e:
+    logging.critical(f"Failed to get token from google: {e}")
     raise HTTPException(
       status_code=status.HTTP_307_TEMPORARY_REDIRECT,
       detail="Failed to authenticate with Google",

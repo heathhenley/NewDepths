@@ -36,7 +36,12 @@ def login(request: Request):
     response.headers["vary"] = "hx-request"
     return response
   response = templates.TemplateResponse(
-    "index.html", {"request": request, "login": "true"})
+    "index.html", {
+      "request": request,
+      "login": "true",
+      "google_auth_url": generate_google_auth_url()
+    }
+  )
   response.headers["vary"] = "hx-request"
   return response
 
@@ -55,14 +60,21 @@ def login(
        "login": "true",
        "error": "Invalid credentials",
        "google_auth_url": generate_google_auth_url()
-      })
+      }
+    )
 
   access_token = create_access_token(
     data={"sub": user.email},
     expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
   )
   response = templates.TemplateResponse(
-      "index.html", {"request": request, "current_user": user})
+      "index.html",
+      {
+        "request": request,
+        "current_user": user,
+        "google_auth_url": generate_google_auth_url()
+      }
+  )
   response.set_cookie(
     key="token",
     value=access_token,
@@ -110,12 +122,16 @@ def register(
     password_confirm: Annotated[str, Form()],
     db: Session = Depends(get_db)):
 
+  google_url = generate_google_auth_url()
+
   if not email or not password or not password_confirm:
     return templates.TemplateResponse(
       "index.html", {
         "request": request,
         "register": "true",
-        "error": "All fields are required"}
+        "error": "All fields are required",
+        "google_auth_url": google_url
+      }
     )
 
   if (crud.get_user_by_email(db, email)):
@@ -123,7 +139,9 @@ def register(
       "index.html", {
         "request": request,
         "register": "true",
-        "error": "Email already registered"}
+        "error": "Email already registered",
+        "google_auth_url": google_url
+      }
     )
 
   if password != password_confirm:
@@ -131,7 +149,8 @@ def register(
       "index.html", {
         "request": request,
         "register": "true",
-        "error": "Passwords do not match"}
+        "error": "Passwords do not match",
+        }
     )
 
   if not strong_password(password):
@@ -139,15 +158,25 @@ def register(
       "index.html", {
         "request": request,
         "register": "true",
-        "error": "Password must be at least 8 characters long"}
+        "error": "Password must be at least 8 characters long",
+        "google_auth_url": google_url}
     )
 
   user_create = schemas.UserCreate(
     hashed_password=hash_password(password),
     email=email,
   )
-  crud.create_user(db, user_create)
+  if not (crud.create_user(db, user_create)):
+    return templates.TemplateResponse(
+      "index.html", {
+        "request": request,
+        "register": "true",
+        "error": "Error creating user",
+        "google_auth_url": google_url
+      }
+    )
 
+  # DRY this out
   # log user in automatically after registering
   user = authenticate_user(db, email, password)
   access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -156,7 +185,12 @@ def register(
     expires_delta=access_token_expires
   )
   request = templates.TemplateResponse(
-      "index.html", {"request": request, "current_user": user})
+      "index.html", {
+        "request": request,
+        "current_user": user,
+        "google_auth_url": google_url
+      }
+    )
   request.set_cookie(
     key="token",
     value=access_token,
