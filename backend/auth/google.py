@@ -21,7 +21,7 @@ VALID_STATES = set()
 @dataclass
 class AuthStateToken:
   token: str
-  expires: datetime = datetime.now() + timedelta(minutes=5)
+  expires: datetime
   data: str = None
 
   def to_state_str(self):
@@ -80,7 +80,10 @@ def generate_google_auth_url():
     state: AuthStateToken: The state token to validate the response with.
     url: str: The url to redirect the user to.
   """
-  state = AuthStateToken(token=str(uuid.uuid4()))
+  state = AuthStateToken(
+    token=str(uuid.uuid4()),
+    expires=datetime.now() + timedelta(minutes=5)
+  )
   VALID_STATES.add(state.token)
 
   baseurl = "https://accounts.google.com"
