@@ -1,9 +1,10 @@
 from base64 import b64encode, b64decode
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-import json
 import hmac
 import hashlib
+import json
+import logging
 from urllib.parse import urlencode
 import uuid
 
@@ -62,7 +63,14 @@ class AuthStateToken:
 
 def validate_state(state: AuthStateToken) -> bool:
   if not state or state.expires < datetime.now():
+    logging.error("State expired: %s", state)
     return False
+  if state.token not in VALID_STATES:
+    logging.error("State not in valid states: %s", state)
+    logging.error("state: %s", state.token)
+    logging.error(VALID_STATES)
+    return False
+  logging.info("State validated: %s", state)
   return state.token in VALID_STATES
 
 

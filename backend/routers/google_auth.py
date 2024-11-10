@@ -54,6 +54,7 @@ def google_auth_callback(
       headers={"Location": "/login"})
 
   if not validate_state(parsed_state):
+    logging.error(parsed_state)
     logging.error("Invalid state")
     raise HTTPException(
       status_code=status.HTTP_307_TEMPORARY_REDIRECT,
