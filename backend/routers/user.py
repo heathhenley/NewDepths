@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 from auth.base import (
   authenticate_user, create_access_token, hash_password, strong_password
 )
-from auth.google import generate_google_auth_url
 from db import crud
 from dependencies.db import get_db
 from dependencies.user import get_user_or_redirect
@@ -31,7 +30,6 @@ def login(request: Request):
       "partials/login.html",
       {
         "request": request,
-        "google_auth_url": generate_google_auth_url()
       })
     response.headers["vary"] = "hx-request"
     return response
@@ -39,7 +37,6 @@ def login(request: Request):
     "index.html", {
       "request": request,
       "login": "true",
-      "google_auth_url": generate_google_auth_url()
     }
   )
   response.headers["vary"] = "hx-request"
@@ -59,7 +56,6 @@ def login(
       {"request": request,
        "login": "true",
        "error": "Invalid credentials",
-       "google_auth_url": generate_google_auth_url()
       }
     )
 
@@ -72,7 +68,6 @@ def login(
       {
         "request": request,
         "current_user": user,
-        "google_auth_url": generate_google_auth_url()
       }
   )
   response.set_cookie(
@@ -102,14 +97,12 @@ def register(request: Request):
       "partials/register.html",
       {
         "request": request,
-        "google_auth_url": generate_google_auth_url()
       })
   return templates.TemplateResponse(
     "index.html",
     {
       "request": request,
       "register": "true",
-      "google_auth_url": generate_google_auth_url()
     })
 
 
@@ -122,15 +115,12 @@ def register(
     password_confirm: Annotated[str, Form()],
     db: Session = Depends(get_db)):
 
-  google_url = generate_google_auth_url()
-
   if not email or not password or not password_confirm:
     return templates.TemplateResponse(
       "index.html", {
         "request": request,
         "register": "true",
         "error": "All fields are required",
-        "google_auth_url": google_url
       }
     )
 
@@ -140,7 +130,6 @@ def register(
         "request": request,
         "register": "true",
         "error": "Email already registered",
-        "google_auth_url": google_url
       }
     )
 
@@ -158,21 +147,30 @@ def register(
       "index.html", {
         "request": request,
         "register": "true",
-        "error": "Password must be at least 8 characters long",
-        "google_auth_url": google_url}
+        "error": "Password must be at least 8 characters long"
+      }
     )
 
-  user_create = schemas.UserCreate(
-    hashed_password=hash_password(password),
-    email=email,
-  )
+  try:
+    user_create = schemas.UserCreate(
+      hashed_password=hash_password(password),
+      email=email,
+    )
+  except Exception as e:
+    return templates.TemplateResponse(
+      "index.html", {
+        "request": request,
+        "register": "true",
+        "error": "Error creating user - is your email valid?",
+      }
+    )
+
   if not (crud.create_user(db, user_create)):
     return templates.TemplateResponse(
       "index.html", {
         "request": request,
         "register": "true",
         "error": "Error creating user",
-        "google_auth_url": google_url
       }
     )
 
@@ -188,7 +186,6 @@ def register(
       "index.html", {
         "request": request,
         "current_user": user,
-        "google_auth_url": google_url
       }
     )
   request.set_cookie(

@@ -5,10 +5,16 @@ import requests
 from fastapi import (
   APIRouter, Depends, Request, templating, HTTPException, status
 )
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from auth.base import create_access_token
-from auth.google import verify_google_id_token, validate_state, AuthStateToken
+from auth.google import (
+  AuthStateToken, 
+  generate_google_auth_url,
+  validate_state,
+  verify_google_id_token,
+)
 from db import crud
 from dependencies.db import get_db
 from limiter import limiter
@@ -20,6 +26,25 @@ from settings import (
 
 templates = templating.Jinja2Templates(directory="templates")
 google_auth_router = APIRouter()
+
+
+@google_auth_router.get("/googleauth/authorize")
+@limiter.limit(DEFAULT_RATE_LIMIT)
+def google_auth_authorize(request: Request, db: Session = Depends(get_db)):
+  """ Redirect the user to the Google OAuth consent screen. """
+  state, url = generate_google_auth_url()
+  response = RedirectResponse(
+    url=url,
+    status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+  )
+  response.set_cookie(
+    key="state",
+    value=state.to_state_str(),
+    httponly=True,
+    secure=True,
+    max_age=60*5
+  )
+  return response
 
 
 
@@ -47,15 +72,21 @@ def google_auth_callback(
       headers={"Location": "/login"})
   
   if not state or not (parsed_state := AuthStateToken.from_state_str(state)):
-    logging.error("No state or invalid state")
+    logging.error("No state or invalid state - possible CSRF attack")
+    raise HTTPException(
+      status_code=status.HTTP_307_TEMPORARY_REDIRECT,
+      detail="Failed to authenticate with Google",
+      headers={"Location": "/login"})
+  
+  if state != request.cookies.get("state"):
+    logging.error("State mismatch - possible CSRF attack")
     raise HTTPException(
       status_code=status.HTTP_307_TEMPORARY_REDIRECT,
       detail="Failed to authenticate with Google",
       headers={"Location": "/login"})
 
   if not validate_state(parsed_state):
-    logging.error(parsed_state)
-    logging.error("Invalid state")
+    logging.error("State expired")
     raise HTTPException(
       status_code=status.HTTP_307_TEMPORARY_REDIRECT,
       detail="Failed to authenticate with Google",

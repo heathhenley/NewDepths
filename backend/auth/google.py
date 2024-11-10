@@ -62,16 +62,10 @@ class AuthStateToken:
 
 
 def validate_state(state: AuthStateToken) -> bool:
-  if not state or state.expires < datetime.now():
-    logging.error("State expired: %s", state)
-    return False
-  if state.token not in VALID_STATES:
-    logging.error("State not in valid states: %s", state)
-    logging.error("state: %s", state.token)
-    logging.error(VALID_STATES)
-    return False
-  logging.info("State validated: %s", state)
-  return state.token in VALID_STATES
+  """ Check if this too old - could happen if they take too long in between
+  starting the auth flow and finishing it.
+  """
+  return state and state.expires > datetime.now()
 
 
 def generate_google_auth_url():
@@ -80,7 +74,11 @@ def generate_google_auth_url():
   We also generate a state token to prevent CSRF attacks and to store
   any non sensitive data we need to send to google and get back (like maybe
   where to redirect the user back to after they authenticate - currently not
-  being used). 
+  being used).
+
+  Returns:
+    state: AuthStateToken: The state token to validate the response with.
+    url: str: The url to redirect the user to.
   """
   state = AuthStateToken(token=str(uuid.uuid4()))
   VALID_STATES.add(state.token)
@@ -94,7 +92,7 @@ def generate_google_auth_url():
     "scope": "email",
     "state": state.to_state_str(),
   }
-  return f"{baseurl}{path}?{urlencode(params)}"
+  return state, f"{baseurl}{path}?{urlencode(params)}"
 
 
 def verify_google_id_token(id_token):

@@ -73,8 +73,8 @@ def send_order_to_noaa(
     json=payload
   )
   if not resp.ok:
-    print(f"Error sending order to NOAA: {resp.status_code}")
-    print(resp.json())
+    logging.error(f"Error sending order to NOAA: {resp.status_code}")
+    logging.error(resp.json())
     raise Exception("Error sending order to NOAA")
   return resp.json()
 
@@ -185,26 +185,3 @@ def order_status(
     order.last_status,
     status_code=http_status
   )
-
-
-# An incoming post handler to receive SNS notifications from NOAA
-@noaa_router.post("/sns", include_in_schema=False)
-@limiter.limit(DEFAULT_RATE_LIMIT)
-async def sns(request: Request):
-  try:
-    # Needs to acknowledge the subscription / confirm it (only the first time)
-    data = await request.json()
-    print(data)
-    if data["Type"] == "SubscriptionConfirmation":
-      resp = requests.get(data["SubscribeURL"])
-      if not resp.ok:
-        raise Exception("Error confirming subscription")
-      message = data["Message"]
-      print(message)
-    if data["Type"] == "Notification":
-      message = data["Message"]
-      print(message)
-  except Exception as e:
-    print(e)
-    return {"status": "error"}
-  return {"status": "ok"}
