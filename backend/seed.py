@@ -11,7 +11,7 @@ def get_db():
 
 def main():
   NOAA_MULTIBEAM_URL = r"https://gis.ngdc.noaa.gov/arcgis/rest/services/web_mercator/multibeam_dynamic/MapServer/0/query"
-  NOAA_CSB_POINTS_URL = r"https://gis.ngdc.noaa.gov/arcgis/rest/services/csb/MapServer/0/query"
+  NOAA_CSB_LINES_URL = r"https://gis.ngdc.noaa.gov/arcgis/rest/services/csb/MapServer/1/query"
   NOAA_NOS_SURVEY_URL = r"https://gis.ngdc.noaa.gov/arcgis/rest/services/web_mercator/nos_hydro_dynamic/MapServer/1/query"
 
   data_sources = [
@@ -21,9 +21,9 @@ def main():
       "description": "NOAA Multibeam Data"
     },
     {
-      "name": "csb0",
-      "base_url": NOAA_CSB_POINTS_URL,
-      "description": "NOAA CSB Data (points)"
+      "name": "csb1",
+      "base_url": NOAA_CSB_LINES_URL,
+      "description": "NOAA CSB Data (lines)"
     },
     {
       "name": "nos_survey",
